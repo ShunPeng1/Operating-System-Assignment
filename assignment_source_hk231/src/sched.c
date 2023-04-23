@@ -13,12 +13,13 @@ static pthread_mutex_t queue_lock;
 static struct queue_t mlq_ready_queue[MAX_PRIO];
 #endif
 
+// return -1 as long as there is 1 pcb
 int queue_empty(void) {
 #ifdef MLQ_SCHED
 	unsigned long prio;
 	for (prio = 0; prio < MAX_PRIO; prio++)
 		if(!empty(&mlq_ready_queue[prio])) 
-			return -1;
+			return -1; 
 #endif
 	return (empty(&ready_queue) && empty(&run_queue));
 }
@@ -47,15 +48,30 @@ struct pcb_t * get_mlq_proc(void) {
 	/*TODO: get a process from PRIORITY [ready_queue].
 	 * Remember to use lock to protect the queue.
 	 * */
+	
+	/* Thuan
+	return NULL when queue is empty, find the highest priority non-empty queue and dequeue
+	*/
+	pthread_mutex_lock(&queue_lock);
+	if(queue_empty() != -1) {
+		for(int i = 0 ; i<MAX_PRIO; i++){
+			if(empty(&mlq_ready_queue[i])) 
+				proc = dequeue(&mlq_ready_queue[i]);
+		}
+	}
+
+	pthread_mutex_unlock(&queue_lock);
 	return proc;	
 }
 
+// enqueue a proc to mlq_queue base on it priority
 void put_mlq_proc(struct pcb_t * proc) {
 	pthread_mutex_lock(&queue_lock);
 	enqueue(&mlq_ready_queue[proc->prio], proc);
 	pthread_mutex_unlock(&queue_lock);
 }
 
+// enqueue a proc to mlq_queue base on it priority
 void add_mlq_proc(struct pcb_t * proc) {
 	pthread_mutex_lock(&queue_lock);
 	enqueue(&mlq_ready_queue[proc->prio], proc);
