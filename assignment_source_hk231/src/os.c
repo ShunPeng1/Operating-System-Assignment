@@ -169,7 +169,7 @@ static void read_config(const char * path) {
 	for(sit = 0; sit < PAGING_MAX_MMSWP; sit++)
 		fscanf(file, "%d", &(memswpsz[sit])); 
 
-       fscanf(file, "\n"); /* Final character */
+        fscanf(file, "\n"); /* Final character */
 #endif
 #endif
 
@@ -189,6 +189,7 @@ static void read_config(const char * path) {
 		fscanf(file, "%lu %s\n", &ld_processes.start_time[i], proc);
 #endif
 		strcat(ld_processes.path[i], proc);
+		//printf("Thuan Debug ld_processes.path[%d] : %s + proc: %s + start time: %lu + prio: %lu + memramsz: %d\n", i, ld_processes.path[i], proc, ld_processes.start_time[i], ld_processes.prio[i], memramsz);
 	}
 }
 
