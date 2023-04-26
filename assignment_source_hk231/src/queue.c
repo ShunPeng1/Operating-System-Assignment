@@ -28,12 +28,12 @@ void sortQueue(struct queue_t *q)
         }
         for (int i = 0; i < q->size - 1; i++)
         {
-                struct pcb_t *minItem = q->proc[i];
+                struct pcb_t *maxItem = q->proc[i];
                 for (int j = i; j < q->size; j++)
                 {
-                        if (q->proc[j]->priority < minItem->priority)
+                        if (q->proc[j]->priority > maxItem->priority)
                         {
-                                minItem = q->proc[j];
+                                maxItem = q->proc[j];
                         }
                 }
         }
