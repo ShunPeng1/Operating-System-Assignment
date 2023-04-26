@@ -76,9 +76,9 @@ struct pcb_t {
 	uint32_t prio;     
 #endif
 #ifdef MM_PAGING
-	struct mm_struct *mm;
-	struct memphy_struct *mram;
-	struct memphy_struct **mswp;
+	struct mm_struct *mm; // the struct hold the page table directory and virtual memories
+	struct memphy_struct *mram; // current physical memory
+	struct memphy_struct **mswp; // array of pointer swap device (2nd memory device) for page swap in the theory 
 	struct memphy_struct *active_mswp;
 #endif
 	struct page_table_t * page_table; // Page table
