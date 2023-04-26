@@ -9,9 +9,7 @@ int empty(struct queue_t *q)
         return (q->size == 0);
 }
 
-/* Thuan
-Put the proc into the queue, the queue is an array so we add at size-1, then size++
-*/
+
 
 void swap(struct pcb_t *a, struct pcb_t *b)
 {
@@ -39,14 +37,20 @@ void sortQueue(struct queue_t *q)
         }
 }
 
+
+/* Thuan
+Put the proc into the queue, the queue is an array so we add at size-1, then size++
+Based on the document declare that maxSlot = max_prio - prio;
+*/
 void enqueue(struct queue_t *q, struct pcb_t *proc)
 {
-        if (q->size < MAX_QUEUE_SIZE)
+        int maxSlot = MAX_PRIO - proc->prio;
+        if (q->size < maxSlot)
         {
                 q->proc[q->size] = proc;
                 q->size++;
         }
-        sortQueue(q);
+        //sortQueue(q);
         /* TODO: put a new process to queue [q] */
 }
 

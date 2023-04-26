@@ -13,13 +13,13 @@ static pthread_mutex_t queue_lock;
 static struct queue_t mlq_ready_queue[MAX_PRIO];
 #endif
 
-// return -1 as long as there is 1 pcb
+// return 0 as long as there is 1 pcb, return 1 when it is empty
 int queue_empty(void) {
 #ifdef MLQ_SCHED
 	unsigned long prio;
 	for (prio = 0; prio < MAX_PRIO; prio++)
 		if(!empty(&mlq_ready_queue[prio])) 
-			return -1; 
+			return 0; 
 #endif
 	return (empty(&ready_queue) && empty(&run_queue));
 }
@@ -53,9 +53,9 @@ struct pcb_t * get_mlq_proc(void) {
 	return NULL when queue is empty, find the highest priority non-empty queue and dequeue
 	*/
 	pthread_mutex_lock(&queue_lock);
-	if(queue_empty() != -1) {
+	if(!queue_empty()) {
 		for(int i = 0 ; i < MAX_PRIO; i++){
-			if(empty(&mlq_ready_queue[i])) 
+			if(!empty(&mlq_ready_queue[i])) 
 				proc = dequeue(&mlq_ready_queue[i]);
 		}
 	}
