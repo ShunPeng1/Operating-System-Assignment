@@ -12,6 +12,33 @@ int empty(struct queue_t *q)
 /* Thuan
 Put the proc into the queue, the queue is an array so we add at size-1, then size++
 */
+
+void swap(struct pcb_t *a, struct pcb_t *b)
+{
+        struct pcb_t *temp = a;
+        a = b;
+        b = temp;
+}
+void sortQueue(struct queue_t *q)
+{
+        int swapped;
+        if (q == NULL)
+        {
+                return;
+        }
+        for (int i = 0; i < q->size - 1; i++)
+        {
+                struct pcb_t *minItem = q->proc[i];
+                for (int j = i; j < q->size; j++)
+                {
+                        if (q->proc[j]->priority < minItem->priority)
+                        {
+                                minItem = q->proc[j];
+                        }
+                }
+        }
+}
+
 void enqueue(struct queue_t *q, struct pcb_t *proc)
 {
         if (q->size < MAX_QUEUE_SIZE)
@@ -19,6 +46,7 @@ void enqueue(struct queue_t *q, struct pcb_t *proc)
                 q->proc[q->size] = proc;
                 q->size++;
         }
+        sortQueue(q);
         /* TODO: put a new process to queue [q] */
 }
 
@@ -30,6 +58,7 @@ struct pcb_t *dequeue(struct queue_t *q)
         /* TODO: return a pcb whose prioprity is the highest
          * in the queue [q] and remember to remove it from q
          * */
+        /* Highest priority : index 0 */
         if (empty(q))
         {
                 return NULL;
