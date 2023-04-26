@@ -49,6 +49,7 @@ void enqueue(struct queue_t *q, struct pcb_t *proc)
         {
                 q->proc[q->size] = proc;
                 q->size++;
+                printf("Debug: Enqueue %d - %d\n", proc->pid, proc->prio);
         }
         //sortQueue(q);
         /* TODO: put a new process to queue [q] */
@@ -67,14 +68,14 @@ struct pcb_t *dequeue(struct queue_t *q)
         {
                 return NULL;
         }
-        struct pcb_t *result = q->proc[0];
+        struct pcb_t *proc = q->proc[0];
         for (int i = 1; i < q->size; i++)
         {
                 q->proc[i - 1] = q->proc[i]; // shift to the left
         }
 
         q->size--;
-        q->proc[q->size] = NULL;
-
-        return result;
+        //q->proc[q->size] = NULL;
+        printf("Debug: Dequeue %d - %d\n", proc->pid, proc->prio);
+        return proc;
 }
