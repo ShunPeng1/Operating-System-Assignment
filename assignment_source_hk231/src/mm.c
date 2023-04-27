@@ -100,9 +100,10 @@ int vmap_page_range(struct pcb_t *caller, // process call
 	 *      in page table caller->mm->pgd[]
 	 */
 
+
 	 /* Tracking for later page replacement activities (if needed)
 		* Enqueue new usage page */
-	 enlist_pgn_node(&caller->mm->fifo_pgn, pgn+pgit);
+	enlist_pgn_node(&caller->mm->fifo_pgn, pgn+pgit);
 
 
 	return 0;
@@ -123,11 +124,13 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
 	for(pgit = 0; pgit < req_pgnum; pgit++)
 	{
 		if(MEMPHY_get_freefp(caller->mram, &fpn) == 0)
-	 {
-		 
-	 } else {  // ERROR CODE of obtaining somes but not enough frames
-	 } 
- }
+		{
+			// IS THERE A TODO HERE???
+		} 
+		else {  // ERROR CODE of obtaining somes but not enough frames
+		
+		} 
+ 	}
 
 	return 0;
 }

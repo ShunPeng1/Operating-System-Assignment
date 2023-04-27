@@ -44,7 +44,7 @@ struct vm_area_struct {
  * unsigned long vm_limit = vm_end - vm_start
  */
    struct mm_struct *vm_mm; // its parent is the mm_struct, where it save the used memory region "symrgtbl"
-   struct vm_rg_struct *vm_freerg_list; // a linked-list of free memory region
+   struct vm_rg_struct *vm_freerg_list; // a head linked-list of free memory region
    struct vm_area_struct *vm_next; 
 };
 
@@ -53,7 +53,7 @@ struct vm_area_struct {
  * storing page table directory for entries, and the virtual memory of each variable of the process
  */
 struct mm_struct {
-   uint32_t *pgd; // the page table directory, contains all page table entries
+   uint32_t *pgd; // the "page table" directory, contains all page table entries
 
    struct vm_area_struct *mmap; // the head of virual memory area linked list
 

@@ -28,7 +28,7 @@ int pgalloc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 
 /*__alloc - allocate a region memory
  *@caller: caller
- *@vmaid: ID vm area to alloc memory region
+ *@vmaid: ID vm area to alloc memory region (in pgalloc case, it always the first vm area)
  *@rgid: memory region ID (used to identify variable in symbole table) (register index)
  *@size: allocated size 
  *@alloc_addr: address of allocated memory region
@@ -39,6 +39,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 	/*Allocate at the toproof */
 	struct vm_rg_struct rgnode;
 
+	// No TODO in get_free_vmrg_area so ignore
 	if (get_free_vmrg_area(caller, vmaid, size, &rgnode) == 0) // if successfully get free region
 	{
 		caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
@@ -60,7 +61,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 	old_sbrk = cur_vma->sbrk;
 
 	/* TODO INCREASE THE LIMIT
-	 * inc_vma_limit(caller, vmaid, inc_sz)
+	 * increase_vma_limit(caller, vmaid, inc_sz)
 	 */
 	increase_vma_limit(caller, vmaid, inc_sz);
 	// TA teacher said that (not compulsory): if increase_vma_limit(caller, vmaid, inc_sz) == -1, must page swap because it cannot allocate more memory
@@ -75,7 +76,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 }
 
 
-/*validate_overlap_vm_area
+/*validate_overlap_vm_area - return -1 if not overlap, return 0 if overlap
  *@caller: caller
  *@vmaid: ID vm area to alloc memory region
  *@vmastart: vma end
@@ -84,14 +85,17 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
  */
 int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int vmaend)
 {
-	//struct vm_area_struct *vma = caller->mm->mmap;
-
 	/* TODO validate the planned memory area is not overlapped */
 
-	return 0;
+	/*Thuan: return -1 if not overlap, return 0 if overlap*/
+	struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
+
+	int overlap = cur_vma->vm_start <= vmaend && vmastart <= cur_vma->vm_end;
+
+	return overlap - 1; 
 }
 
-/*increase_vma_limit - increase vm area limits to reserve space for new variable
+/*increase_vma_limit - increase vm area limits to reserve space for new variable, return -1 if fail
  *@caller: caller
  *@vmaid: ID vm area to alloc memory region
  *@inc_sz: increment size 
@@ -99,23 +103,23 @@ int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int 
  */
 int increase_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
 {
-	struct vm_rg_struct * newrg = malloc(sizeof(struct vm_rg_struct));
+	struct vm_rg_struct * new_region = malloc(sizeof(struct vm_rg_struct));
 	int inc_amt = PAGING_PAGE_ALIGNSZ(inc_sz); 
-	int increased_num_page =  inc_amt / PAGING_PAGESZ; 
-	struct vm_rg_struct *area = create_vm_rg_of_pcb_at_brk(caller, vmaid, inc_sz, inc_amt); // this is a newly allocated region from [sbrk , sbrk + inc_sz], only a temporary struct to store start and end
+	int num_of_pages_increased =  inc_amt / PAGING_PAGESZ; 
+	struct vm_rg_struct *next_area = create_vm_rg_of_pcb_at_brk(caller, vmaid, inc_sz, inc_amt); // this is a newly allocated region from [sbrk , sbrk + inc_sz], only a temporary struct to store start and end
 	struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
 
 	int old_end = cur_vma->vm_end;
 
 	/*Validate overlap of obtained region */
-	if (validate_overlap_vm_area(caller, vmaid, area->rg_start, area->rg_end) < 0)
+	if (validate_overlap_vm_area(caller, vmaid, next_area->rg_start, next_area->rg_end) < 0) // this check if the new region [sbrk , sbrk + inc_sz] is in [start, end], return -1 if not (meaning sbrk is more than end)
 		return -1; /*Overlap and failed allocation */
 
 	/* The obtained vm area (only) 
 	 * now will be alloc real ram region */
 	cur_vma->vm_end += inc_sz;
-	if (vm_map_ram(caller, area->rg_start, area->rg_end, 
-										old_end, increased_num_page , newrg) < 0) // There is the TODO in mm.c vmap_page_range()
+	if (vm_map_ram(caller, next_area->rg_start, next_area->rg_end, // Notice that there is the TODO in mm.c vmap_page_range() in this code
+										old_end, num_of_pages_increased , new_region) < 0) 
 		return -1; /* Map the memory to MEMRAM */
 
 	return 0;
@@ -131,7 +135,7 @@ int increase_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
  *@size: allocated size 
  *
  */
-int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_struct *newrg)
+int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_struct *new_region)
 {
 	struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
 
@@ -140,16 +144,16 @@ int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_s
 	if (rgit == NULL)
 		return -1;
 
-	/* Probe unintialized newrg */
-	newrg->rg_start = newrg->rg_end = -1;
+	/* Probe unintialized new_region */
+	new_region->rg_start = new_region->rg_end = -1;
 
 	/* Traverse on list of free vm region to find a fit space */
 	while (rgit != NULL)
 	{
 		if (rgit->rg_start + size <= rgit->rg_end)
 		{ /* Current region has enough space */
-			newrg->rg_start = rgit->rg_start;
-			newrg->rg_end = rgit->rg_start + size;
+			new_region->rg_start = rgit->rg_start;
+			new_region->rg_end = rgit->rg_start + size;
 
 			/* Update left space in chosen region */
 			if (rgit->rg_start + size < rgit->rg_end)
@@ -184,7 +188,7 @@ int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_s
 		}
 	}
 
- if(newrg->rg_start == -1) // new region not found
+ if(new_region->rg_start == -1) // new region not found
 	 return -1;
 
  return 0;
@@ -240,15 +244,15 @@ struct vm_area_struct *get_vma_by_index(struct mm_struct *mm, int vmaid)
  */
 struct vm_rg_struct* create_vm_rg_of_pcb_at_brk(struct pcb_t *caller, int vmaid, int size, int alignedsz)
 {
-	struct vm_rg_struct * newrg;
+	struct vm_rg_struct * new_region;
 	struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
 
-	newrg = malloc(sizeof(struct vm_rg_struct));
+	new_region = malloc(sizeof(struct vm_rg_struct));
 
-	newrg->rg_start = cur_vma->sbrk;
-	newrg->rg_end = newrg->rg_start + size;
+	new_region->rg_start = cur_vma->sbrk;
+	new_region->rg_end = new_region->rg_start + size;
 
-	return newrg;
+	return new_region;
 }
 
 

@@ -77,12 +77,12 @@ struct pcb_t {
 	uint32_t prio;     
 #endif
 #ifdef MM_PAGING
-	struct mm_struct *mm; // the struct hold the page table directory and virtual memories
-	struct memphy_struct *mram; // current physical memory
-	struct memphy_struct **mswp; // array of pointer swap device (2nd memory device) for page swap in the theory 
+	struct mm_struct *mm; // IMPORTANT the struct hold the page table directory and virtual memories, each process have each own mm
+	struct memphy_struct *mram; // current physical memory, only 1 created in os.c and share by all process
+	struct memphy_struct **mswp; // array of pointer swap device (2nd memory device) for page swap in the theory , only 4 created in os.c and share by all process
 	struct memphy_struct *active_mswp;
 #endif
-	// Non MM_PAGING
+	// Non MM_PAGING please ignore
 	addr_t regs[10]; // This is unused, array of registers, store address of allocated regions
 	struct page_table_t * page_table; // This is unused, use page table directory in mm_struct *mm
 

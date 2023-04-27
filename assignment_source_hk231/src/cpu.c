@@ -3,6 +3,7 @@
 #include "mem.h"
 #include "mm.h"
 
+// ###################### THESE ARE UNUSED CODE, PLEASE IGNORE ####################
 int calc(struct pcb_t * proc) {
 	return ((unsigned long)proc & 0UL);
 }
@@ -44,6 +45,8 @@ int write(
 					// [destination] + [offset]
 	return write_mem(proc->regs[destination] + offset, proc, data);
 } 
+
+//###########################################################################
 
 int run(struct pcb_t * proc) {
 	/* Check if Program Counter point to the proper instruction */

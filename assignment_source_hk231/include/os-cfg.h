@@ -4,9 +4,9 @@
 #define MLQ_SCHED 1
 #define MAX_PRIO 140
 
-
-/* Thuan Approved configable */
 #define MM_PAGING
+/* Thuan Approved configable */
+
 
 #define MM_FIXED_MEMSZ
 //#define VMDBG 1
