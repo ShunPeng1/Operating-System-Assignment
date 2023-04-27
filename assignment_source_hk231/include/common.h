@@ -68,8 +68,9 @@ struct pcb_t {
 	uint32_t pid;	// PID
 	uint32_t priority; // Default priority, this legacy (FIXED) value depend on process itself
 	struct code_seg_t * code;	// Code segment
-	addr_t regs[10]; // Registers, store address of allocated regions
 	uint32_t pc; // Program pointer, point to the next instruction
+	uint32_t bp;	// Break pointer
+
 #ifdef MLQ_SCHED
 	// Priority on execution (if supported), on-fly aka. changeable
 	// and this vale overwrites the default priority when it existed
@@ -81,8 +82,9 @@ struct pcb_t {
 	struct memphy_struct **mswp; // array of pointer swap device (2nd memory device) for page swap in the theory 
 	struct memphy_struct *active_mswp;
 #endif
-	struct page_table_t * page_table; // Page table
-	uint32_t bp;	// Break pointer
+	// Non MM_PAGING
+	addr_t regs[10]; // This is unused, array of registers, store address of allocated regions
+	struct page_table_t * page_table; // This is unused, use page table directory in mm_struct *mm
 
 };
 

@@ -43,7 +43,7 @@ struct vm_area_struct {
  * Derived field
  * unsigned long vm_limit = vm_end - vm_start
  */
-   struct mm_struct *vm_mm; // 
+   struct mm_struct *vm_mm; // its parent is the mm_struct, where it save the used memory region "symrgtbl"
    struct vm_rg_struct *vm_freerg_list; // a linked-list of free memory region
    struct vm_area_struct *vm_next; 
 };
