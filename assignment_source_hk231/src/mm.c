@@ -325,7 +325,7 @@ int print_pgtbl(struct pcb_t *caller, uint32_t start, uint32_t end)
 
   if(end == -1){
     pgn_start = 0;
-    struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, 0);
+    struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, 0);
     end = cur_vma->vm_end;
   }
   pgn_start = PAGING_PGN(start);
