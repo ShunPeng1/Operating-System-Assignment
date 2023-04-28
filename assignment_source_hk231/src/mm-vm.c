@@ -90,7 +90,8 @@ int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int 
 	/*Thuan: return -1 if not overlap, return 0 if overlap*/
 	struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
 
-	int overlap = cur_vma->vm_start <= vmaend && vmastart <= cur_vma->vm_end;
+	//int overlap = cur_vma->vm_start <= vmaend && vmastart <= cur_vma->vm_end; // as long as it overlap
+	int overlap = cur_vma->vm_start <= vmastart && vmaend  <= cur_vma->vm_end; // We need the new create sbrk to be in the start end
 
 	return overlap - 1; 
 }
