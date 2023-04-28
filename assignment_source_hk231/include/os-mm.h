@@ -65,28 +65,31 @@ struct mm_struct {
 };
 
 /*
- * FRAME/MEM PHY struct
+ * physical FRAME is a linked list
  */
 struct framephy_struct { 
-   int fpn;
-   struct framephy_struct *fp_next;
+   int fpn; // frame page number
+   struct framephy_struct *fp_next; 
 
    /* Resereed for tracking allocated framed */
    struct mm_struct* owner;
 };
 
+/*
+ * physical memory struct 
+ */
 struct memphy_struct {
    /* Basic field of data and size */
-   BYTE *storage;
-   int maxsz;
+   BYTE *storage; // byte array
+   int maxsz; // max size of byte array
    
    /* Sequential device fields */ 
    int rdmflg; // the memory access is randomly (rdmflg = 1) or serially access(rdmflg = 0)
-   int cursor;
+   int cursor; 
 
    /* Management structure */
-   struct framephy_struct *free_fp_list; // free frame list
-   struct framephy_struct *used_fp_list; // used frame list
+   struct framephy_struct *free_fp_list; // free frame linked list
+   struct framephy_struct *used_fp_list; // used frame linked list
 };
 
 #endif

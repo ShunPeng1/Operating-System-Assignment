@@ -3,7 +3,7 @@
 #include "mem.h"
 #include "mm.h"
 
-// ###################### THESE ARE UNUSED CODE, PLEASE IGNORE ####################
+// ###################### THESE ARE NON MM_PAGING CODE, PLEASE IGNORE ####################
 int calc(struct pcb_t * proc) {
 	return ((unsigned long)proc & 0UL);
 }
