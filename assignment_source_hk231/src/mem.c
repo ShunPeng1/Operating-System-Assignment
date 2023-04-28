@@ -5,6 +5,9 @@
 #include <pthread.h>
 #include <stdio.h>
 
+// ###################### THIS FILE IS NON MM_PAGING CODE, PLEASE IGNORE ##########################
+
+
 static BYTE _ram[RAM_SIZE];
 
 static struct {
@@ -171,3 +174,4 @@ void dump(void) {
 }
 
 
+// #########################################################################################
