@@ -113,23 +113,44 @@ int vmap_page_range(struct pcb_t *caller, // process call
  * alloc_pages_range - allocate req_pgnum of frame in ram
  * @caller    : caller
  * @req_pgnum : request page num
- * @frm_lst   : frame list
+ * @frm_lst   : return the head of the free frame list you created
+ * return: 0 if successful, <0 if not, -3000 if not enough memory to allocate
  */
 
 int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struct** frm_lst)
 {
 	int pgit, fpn;
-	
-	struct framephy_struct *newfp_str;
 
 	for(pgit = 0; pgit < req_pgnum; pgit++)
 	{
 		if(MEMPHY_get_freefp(caller->mram, &fpn) == 0) // Successfully Get the free frame number id in fpn
 		{
-			
+			struct framephy_struct *new_node = malloc(sizeof(struct framephy_struct));
+
+			/* Thuan: Create new node with value fpn, then assign the new node become head of frm_lst */
+			new_node->fpn = fpn;
+			new_node->fp_next = *frm_lst;
+			frm_lst = &new_node;
+
 		} 
 		else {  // ERROR CODE of obtaining somes but not enough frames
-		
+			/*@bksysnet: author provides a feasible solution of getting frames
+			*FATAL logic in here, wrong behaviour if we have not enough page
+			*i.e. we request 1000 frames meanwhile our RAM has size of 3 frames
+			*Don't try to perform that case in this simple work, it will result
+			*in endless procedure of swap-off to get frame and we have not provide 
+			*duplicate control mechanism, keep it simple
+			*/
+
+			// Thuan: Free all physical frame that was trying to get before not enough frame to allocate
+			for(struct framephy_struct *head_node = *frm_lst; head_node != NULL; ){
+				frm_lst = &((*frm_lst)->fp_next); // address of next node
+				free(head_node);
+				head_node = *frm_lst;
+			}
+
+			
+			return -3000; // not enough memory
 		} 
  	}
 

@@ -19,7 +19,6 @@ void swap(struct pcb_t *a, struct pcb_t *b)
 }
 void sortQueue(struct queue_t *q)
 {
-    int swapped;
     if (q == NULL)
     {
         return;
