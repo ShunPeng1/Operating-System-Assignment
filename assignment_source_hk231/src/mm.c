@@ -119,13 +119,14 @@ int vmap_page_range(struct pcb_t *caller, // process call
 int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struct** frm_lst)
 {
 	int pgit, fpn;
-	//struct framephy_struct *newfp_str;
+	
+	struct framephy_struct *newfp_str;
 
 	for(pgit = 0; pgit < req_pgnum; pgit++)
 	{
-		if(MEMPHY_get_freefp(caller->mram, &fpn) == 0)
+		if(MEMPHY_get_freefp(caller->mram, &fpn) == 0) // Successfully Get the free frame number id in fpn
 		{
-			// IS THERE A TODO HERE???
+			
 		} 
 		else {  // ERROR CODE of obtaining somes but not enough frames
 		
@@ -178,6 +179,8 @@ int vm_map_ram(struct pcb_t *caller, int astart, int aend, int mapstart, int inc
 	return 0;
 }
 
+
+// Thuan TODO: This page maybe using some where for swap page
 /* Swap copy content page from source frame to destination frame 
  * @mpsrc  : source memphy
  * @srcfpn : source physical page number (FPN)
@@ -259,6 +262,7 @@ int enlist_pgn_node(struct pgn_t **plist, int pgn)
 	return 0;
 }
 
+// ###################################### Print Debug ##############################
 int print_list_fp(struct framephy_struct *ifp)
 {
 	 struct framephy_struct *fp = ifp;

@@ -130,7 +130,7 @@ int pgwrite(
 		uint32_t destination, // Index of destination register
 		uint32_t offset);
 /* Local VM prototypes */
-struct vm_rg_struct * get_symrg_byid(struct mm_struct* mm, int rgid);
+struct vm_rg_struct * get_symbol_region_by_id(struct mm_struct* mm, int rgid);
 int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int vmaend);
 int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_struct *newrg);
 int increase_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz);

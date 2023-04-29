@@ -65,10 +65,10 @@ struct mm_struct {
 };
 
 /*
- * physical FRAME is a linked list
+ * physical FRAME is a linked list, framephy_struct is a node that hold the actual frame id
  */
 struct framephy_struct { 
-   int fpn; // frame page number
+   int fpn; // the actual frame page number id
    struct framephy_struct *fp_next; 
 
    /* Resereed for tracking allocated framed */
@@ -76,7 +76,9 @@ struct framephy_struct {
 };
 
 /*
- * physical memory struct 
+Physical memory struct, using a array of byte to store data, have 2 mode
+- randomly: when adding or removing, we create a random address to store/load at that address
+- serially: when adding or removing, we traverse from 0 -> maxsz
  */
 struct memphy_struct {
    /* Basic field of data and size */
@@ -85,7 +87,7 @@ struct memphy_struct {
    
    /* Sequential device fields */ 
    int rdmflg; // the memory access is randomly (rdmflg = 1) or serially access(rdmflg = 0)
-   int cursor; 
+   int cursor; // for iterating during serially add
 
    /* Management structure */
    struct framephy_struct *free_fp_list; // free frame linked list

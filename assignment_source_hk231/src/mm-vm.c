@@ -196,12 +196,12 @@ int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_s
 }
 
 
-/*get_symrg_byid - get mem region by region ID
+/*get_symbol_region_by_id - get mem region by region ID
  *@mm: memory region
  *@rgid: region ID act as symbol index of variable
  *
  */
-struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
+struct vm_rg_struct *get_symbol_region_by_id(struct mm_struct *mm, int rgid)
 {
 	if(rgid < 0 || rgid > PAGING_MAX_SYMTBL_SZ)
 		return NULL;
@@ -422,7 +422,7 @@ int pg_setval(struct mm_struct *mm, int addr, BYTE value, struct pcb_t *caller)
  */
 int __read(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE *data)
 {
-	struct vm_rg_struct *currg = get_symrg_byid(caller->mm, rgid);
+	struct vm_rg_struct *currg = get_symbol_region_by_id(caller->mm, rgid);
 
 	struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
 
@@ -467,7 +467,7 @@ int pgread(
  */
 int __write(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE value)
 {
-	struct vm_rg_struct *currg = get_symrg_byid(caller->mm, rgid);
+	struct vm_rg_struct *currg = get_symbol_region_by_id(caller->mm, rgid);
 
 	struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
 	
