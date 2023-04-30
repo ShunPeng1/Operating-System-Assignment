@@ -38,6 +38,8 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 {
 	/*Allocate at the toproof */
 	struct vm_rg_struct rgnode;
+	
+	//printf("DEBUG: ALLOC\n");
 
 	// No TODO in get_free_vmrg_area so ignore
 	if (get_free_vmrg_area(caller, vmaid, size, &rgnode) == 0) // if successfully get free region
@@ -50,6 +52,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 		return 0;
 	}
 
+	//printf("DEBUG: ALLOC NOT FOUND FREE VMRG_AREA\n");
 	/* TODO get_free_vmrg_area FAILED handle the region management (Fig.6)*/
 
 	/*Attempt to increase limit to get space */
@@ -63,19 +66,21 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 	/* TODO INCREASE THE LIMIT */
 	if(increase_vma_limit(caller, vmaid, inc_sz) < 0) return -1;
 	
-	// DEBUGGING
-	printf("DEBUG: ALLOC\n");
-	print_list_vma(caller->mm->mmap);
-	print_list_rg(&(caller->mm->symrgtbl[vmaid]));
-	print_list_fp(caller->mram->free_fp_list);
-	print_list_pgn(caller->mm->fifo_pgn);
-	print_pgtbl(caller, 0 , -1);
-
 	/*Successful increase limit */
 	caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
 	caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size;
 
 	*alloc_addr = old_sbrk;
+
+
+	/* DEBUGGING */
+	/*
+	print_list_vma(caller->mm->mmap);
+	print_list_rg(&(caller->mm->symrgtbl[vmaid]));
+	print_list_fp(caller->mram->free_fp_list);
+	print_list_pgn(caller->mm->fifo_pgn);
+	print_pgtbl(caller, 0 , -1);
+	*/
 
 	return 0;
 }
@@ -128,9 +133,6 @@ int increase_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
 										old_end, num_of_pages_increased , new_region) < 0) /* Map the memory to MEMRAM */
 		return -1; 
 
-	/* Enlist the new free region*/
-	new_region->rg_next = cur_vma->vm_freerg_list;
-	cur_vma->vm_freerg_list = new_region;
 
 	return 0;
 
@@ -171,7 +173,7 @@ int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_s
 				rgit->rg_start = rgit->rg_start + size;
 			}
 			else
-			{ /*Use up all space, remove current node */
+			{ /*Use up all space (rgit->rg_start + size == rgit->rg_end), remove current node */
 				/*Clone next rg node */
 				struct vm_rg_struct *nextrg = rgit->rg_next;
 

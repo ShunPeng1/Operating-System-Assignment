@@ -84,22 +84,19 @@ int vmap_page_range(struct pcb_t *caller, // process call
 					struct framephy_struct *frames,//head of list of the mapped frames
 					struct vm_rg_struct *ret_rg)// return mapped region, the real mapped fp
 {                                         // no guarantee all given pages are mapped
-	//uint32_t * pte = malloc(sizeof(uint32_t));
-	//int  fpn;
-	
-	int page_number_begin = PAGING_PGN(addr); // the page number at addr 
-	int pgit = 0;
-	ret_rg->rg_end = ret_rg->rg_start = addr; // at least the very first space is usable
-	
-	
 	/* TODO map range of frame to address space 
 	 *      [addr to addr + pgnum*PAGING_PAGESZ]
 	 *      in page table caller->mm->pgd[]
 	 */
 
+
+	int page_number_begin = PAGING_PGN(addr); // the page number at addr 
+	int pgit = 0;
+	ret_rg->rg_end = ret_rg->rg_start = addr; // at least the very first space is usable	
+	
 	uint32_t user_define_number = 0; // Thuan: I don't need it yet
 
-	for(struct framephy_struct *roam_node = frames; roam_node != NULL; roam_node = frames->fp_next){
+	for(struct framephy_struct *roam_node = frames; roam_node != NULL; roam_node = roam_node->fp_next){
 		uint32_t frame_number = roam_node->fpn;
 
 		uint32_t pte = 	(1 << 31) | // present
@@ -113,7 +110,8 @@ int vmap_page_range(struct pcb_t *caller, // process call
 		
 		/* Enqueue new usage page */
 		enlist_pgn_node(&caller->mm->fifo_pgn, page_number_begin+pgit);
-		print_list_pgn(caller->mm->fifo_pgn);
+		
+		pgit++;
 	}
 
 	return 0;
@@ -121,19 +119,19 @@ int vmap_page_range(struct pcb_t *caller, // process call
 
 /* 
  * alloc_pages_range - allocate req_pgnum of frame in ram
- * @caller    : caller
+ * @memphy	  : ram or swap
  * @req_pgnum : request page number
  * @frm_lst   : return the head of the free frame list you created
  * return: the size of the array of frm_list
  */
 
-int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struct** frm_lst)
+int alloc_pages_range(struct memphy_struct *memphy , int req_pgnum, struct framephy_struct** frm_lst)
 {
 	int pgit, fpn;
 
 	for(pgit = 0; pgit < req_pgnum; pgit++)
 	{
-		if(MEMPHY_get_freefp(caller->mram, &fpn) == 0) // Successfully Get the free frame number id in fpn
+		if(MEMPHY_get_freefp(memphy, &fpn) == 0) // Successfully Get the free frame number id in fpn
 		{
 			struct framephy_struct *new_node = malloc(sizeof(struct framephy_struct));
 
@@ -166,13 +164,13 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
  * @astart    : vm area start
  * @aend      : vm area end
  * @mapstart  : start mapping point
- * @incpgnum  : number of mapped page
+ * @increase_page_number  : number of mapped page
  * @ret_rg    : returned region
  */
-int vm_map_ram(struct pcb_t *caller, int astart, int aend, int mapstart, int incpgnum, struct vm_rg_struct *ret_rg)
+int vm_map_ram(struct pcb_t *caller, int astart, int aend, int mapstart, int increase_page_number, struct vm_rg_struct *ret_rg)
 {
-	struct framephy_struct *frm_lst = NULL;
-	int ret_num_alloc_page;
+	struct framephy_struct *mram_free_frame_list = NULL;
+	int num_increase_alloc_page_by_mram;
 
 	/*@bksysnet: author provides a feasible solution of getting frames
 	 *FATAL logic in here, wrong behaviour if we have not enough page
@@ -181,13 +179,13 @@ int vm_map_ram(struct pcb_t *caller, int astart, int aend, int mapstart, int inc
 	 *in endless procedure of swap-off to get frame and we have not provide 
 	 *duplicate control mechanism, keep it simple
 	 */
-	ret_num_alloc_page = alloc_pages_range(caller, incpgnum, &frm_lst);
-	printf("DEBUG: alloc_pages_range\n");
-	if (ret_num_alloc_page < 0 && ret_num_alloc_page != -3000)
+	num_increase_alloc_page_by_mram = alloc_pages_range(caller->mram, increase_page_number, &mram_free_frame_list);
+	//printf("DEBUG: alloc_pages_range\n");
+	if (num_increase_alloc_page_by_mram < 0 && num_increase_alloc_page_by_mram != -3000)
 		return -1;
 
 	/* Out of memory */
-	if (ret_num_alloc_page == -3000) 
+	if (num_increase_alloc_page_by_mram == -3000) 
 	{
 #ifdef MMDBG
 		printf("OOM: vm_map_ram out of memory \n");
@@ -197,14 +195,30 @@ int vm_map_ram(struct pcb_t *caller, int astart, int aend, int mapstart, int inc
 
 	/* it leaves the case of memory is enough but half in ram, half in swap
 	 * do the swaping all to swapper to get the all in ram */
-	vmap_page_range(caller, mapstart, incpgnum, frm_lst, ret_rg);
-	printf("DEBUG: vmap_page_range\n");
-	MEMPHY_concat_usedfp(caller->mram, frm_lst); // Add the  free frame allocated to the used frame
-	printf("DEBUG: MEMPHY_concat_usedfp\n");
+	if(num_increase_alloc_page_by_mram != increase_page_number){ // Thuan TODO swap from swap to main frame
+		/*
+		struct framephy_struct *mswp_free_frame_list = NULL;
+		int increase_page_requesting_by_mswp = increase_page_number - num_increase_alloc_page_by_mram;
+		int i_mswp = 0; // from 1 -> 4
+		while(increase_page_requesting_by_mswp != 0 && i_mswp < 4){
+			increase_page_requesting_by_mswp -= alloc_pages_range(caller->mswp[i_mswp], increase_page_requesting_by_mswp, &mswp_free_frame_list);
+			
+			i_mswp++;
+		}
+		// Surely it must have enough size in swap right ?
+		*/
+	}
+	
+	vmap_page_range(caller, mapstart, num_increase_alloc_page_by_mram, mram_free_frame_list, ret_rg); // Add the free page and frame to the page table
+	//printf("DEBUG: vmap_page_range\n");
+	
+	MEMPHY_concat_usedfp(caller->mram, mram_free_frame_list); // Add the free frame allocated to the used frame
+	//printf("DEBUG: MEMPHY_concat_usedfp\n");
 	
 	// Update region
 	ret_rg->rg_start = astart;
 	ret_rg->rg_end = aend;
+	ret_rg->rg_next = NULL;
 	
 	return 0;
 }
@@ -221,15 +235,15 @@ int __swap_cp_page(struct memphy_struct *mpsrc, int srcfpn,
 								struct memphy_struct *mpdst, int dstfpn) 
 {
 	int cellidx;
-	int addrsrc,addrdst;
+	int physical_address_src,physical_address_dst;
 	for(cellidx = 0; cellidx < PAGING_PAGESZ; cellidx++)
 	{
-		addrsrc = srcfpn * PAGING_PAGESZ + cellidx;
-		addrdst = dstfpn * PAGING_PAGESZ + cellidx;
+		physical_address_src = srcfpn * PAGING_PAGESZ + cellidx;
+		physical_address_dst = dstfpn * PAGING_PAGESZ + cellidx;
 
 		BYTE data;
-		MEMPHY_read(mpsrc, addrsrc, &data);
-		MEMPHY_write(mpdst, addrdst, data);
+		MEMPHY_read(mpsrc, physical_address_src, &data);
+		MEMPHY_write(mpdst, physical_address_dst, data);
 	}
 
 	return 0;
@@ -258,6 +272,8 @@ int init_mm(struct mm_struct *mm, struct pcb_t *caller)
 	vma->vm_mm = mm; /*point back to vma owner */
 
 	mm->mmap = vma;
+	mm->fifo_pgn = NULL;
+
 	return 0;
 }
 
@@ -374,7 +390,7 @@ int print_pgtbl(struct pcb_t *caller, uint32_t start, uint32_t end)
 
 	for(pgit = pgn_start; pgit < pgn_end; pgit++)
 	{
-		 printf("%08ld: %08x\n", pgit * sizeof(uint32_t), caller->mm->pgd[pgit]);
+		printf("%08ld: %08x\n", pgit * sizeof(uint32_t), caller->mm->pgd[pgit]);
 	}
 
 	return 0;
