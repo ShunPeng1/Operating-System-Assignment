@@ -74,14 +74,13 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 
 
 	/* DEBUGGING */
-	/*
-	print_list_vma(caller->mm->mmap);
-	print_list_rg(&(caller->mm->symrgtbl[vmaid]));
-	print_list_fp(caller->mram->free_fp_list);
-	print_list_pgn(caller->mm->fifo_pgn);
-	print_pgtbl(caller, 0 , -1);
-	*/
-
+	
+	//print_list_vma(caller->mm->mmap);
+	//print_list_rg(&(caller->mm->symrgtbl[vmaid]));
+	//print_list_fp(caller->mram->free_fp_list);
+	//print_list_pgn(caller->mm->fifo_pgn);
+	//print_pgtbl(caller, 0 , -1);
+	
 	return 0;
 }
 

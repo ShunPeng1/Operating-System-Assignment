@@ -52,7 +52,7 @@ struct vm_area_struct {
  * storing page table directory for entries, and the virtual memory of each variable of the process
  */
 struct mm_struct {
-   uint32_t *pgd; // the "page table" directory, contains all page table entries (pte) format
+   uint32_t *pgd; // the "page table" directory, an array contains all page table entries (pte) format
 
    struct vm_area_struct *mmap; // the head of virual memory area linked list
 
