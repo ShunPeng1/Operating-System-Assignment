@@ -10,11 +10,10 @@ typedef uint32_t addr_t;
 //typedef unsigned int uint32_t;
 
 /*
-* Page
 * A linked list
 */
 struct pgn_t{
-   int pgn;
+   int pgn; // page number (14 bit)
    struct pgn_t *pg_next; 
 };
 
@@ -53,7 +52,7 @@ struct vm_area_struct {
  * storing page table directory for entries, and the virtual memory of each variable of the process
  */
 struct mm_struct {
-   uint32_t *pgd; // the "page table" directory, contains all page table entries
+   uint32_t *pgd; // the "page table" directory, contains all page table entries (pte) format
 
    struct vm_area_struct *mmap; // the head of virual memory area linked list
 

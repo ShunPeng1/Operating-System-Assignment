@@ -141,6 +141,7 @@ struct vm_area_struct *get_vma_by_index(struct mm_struct *mm, int vmaid);
 /* MEM/PHY protypes */
 int MEMPHY_get_freefp(struct memphy_struct *mp, int *fpn);
 int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn);
+int MEMPHY_concat_usedfp(struct memphy_struct *mp, struct framephy_struct* start_node);
 int MEMPHY_read(struct memphy_struct * mp, int addr, BYTE *value);
 int MEMPHY_write(struct memphy_struct * mp, int addr, BYTE data);
 int MEMPHY_dump(struct memphy_struct * mp);

@@ -50,7 +50,7 @@ void enqueue(struct queue_t *q, struct pcb_t *proc)
     {
         q->proc[q->size] = proc;
         q->size++;
-        printf("Debug: Enqueue %d - %d\n", proc->pid, proc->prio);
+        //printf("Debug: Enqueue %d - %d\n", proc->pid, proc->prio);
     }
     //sortQueue(q);
     
@@ -77,6 +77,6 @@ struct pcb_t *dequeue(struct queue_t *q)
 
     q->size--;
     //q->proc[q->size] = NULL;
-    printf("Debug: Dequeue %d - %d\n", proc->pid, proc->prio);
+    //printf("Debug: Dequeue %d - %d\n", proc->pid, proc->prio);
     return proc;
 }

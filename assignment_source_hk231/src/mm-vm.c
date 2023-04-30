@@ -60,11 +60,16 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 
 	old_sbrk = cur_vma->sbrk;
 
-	/* TODO INCREASE THE LIMIT
-	 * increase_vma_limit(caller, vmaid, inc_sz)
-	 */
-	increase_vma_limit(caller, vmaid, inc_sz);
-	// TA teacher said that (not compulsory): if increase_vma_limit(caller, vmaid, inc_sz) == -1, must page swap because it cannot allocate more memory
+	/* TODO INCREASE THE LIMIT */
+	if(increase_vma_limit(caller, vmaid, inc_sz) < 0) return -1;
+	
+	// DEBUGGING
+	printf("DEBUG: ALLOC\n");
+	print_list_vma(caller->mm->mmap);
+	print_list_rg(&(caller->mm->symrgtbl[vmaid]));
+	print_list_fp(caller->mram->free_fp_list);
+	print_list_pgn(caller->mm->fifo_pgn);
+	print_pgtbl(caller, 0 , -1);
 
 	/*Successful increase limit */
 	caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
@@ -90,8 +95,8 @@ int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int 
 	/*Thuan: return -1 if not overlap, return 0 if overlap*/
 	struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
 
-	//int overlap = cur_vma->vm_start <= vmaend && vmastart <= cur_vma->vm_end; // as long as it overlap
-	int overlap = cur_vma->vm_start <= vmastart && vmaend  <= cur_vma->vm_end; // We need the new create sbrk to be in the start end
+	int overlap = cur_vma->vm_start <= vmaend && vmastart <= cur_vma->vm_end; // as long as it overlap
+	//int overlap = cur_vma->vm_start <= vmastart && vmaend  <= cur_vma->vm_end; // We need the new create sbrk to be in the start end
 
 	return overlap - 1; 
 }
@@ -99,15 +104,15 @@ int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int 
 /*increase_vma_limit - increase vm area limits to reserve space for new variable, return -1 if fail
  *@caller: caller
  *@vmaid: ID vm area to alloc memory region
- *@inc_sz: increment size 
+ *@inc_sz: increment byte size 
  *
  */
 int increase_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
 {
 	struct vm_rg_struct * new_region = malloc(sizeof(struct vm_rg_struct));
-	int inc_amt = PAGING_PAGE_ALIGNSZ(inc_sz); 
-	int num_of_pages_increased =  inc_amt / PAGING_PAGESZ; 
-	struct vm_rg_struct *next_area = create_vm_rg_of_pcb_at_brk(caller, vmaid, inc_sz, inc_amt); // this is a newly allocated region from [sbrk , sbrk + inc_sz], only a temporary struct to store start and end
+	int byte_increase_amt = PAGING_PAGE_ALIGNSZ(inc_sz); // this is equal to inc_sz
+	int num_of_pages_increased =  byte_increase_amt / PAGING_PAGESZ; 
+	struct vm_rg_struct *next_area = create_vm_rg_of_pcb_at_brk(caller, vmaid, inc_sz, byte_increase_amt); // this is a newly allocated region from [sbrk , sbrk + inc_sz], only a temporary struct to store start and end
 	struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
 
 	int old_end = cur_vma->vm_end;
@@ -120,8 +125,12 @@ int increase_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
 	 * now will be alloc real ram region */
 	cur_vma->vm_end += inc_sz;
 	if (vm_map_ram(caller, next_area->rg_start, next_area->rg_end, // Notice that there is the TODO in mm.c vmap_page_range() in this code
-										old_end, num_of_pages_increased , new_region) < 0) 
-		return -1; /* Map the memory to MEMRAM */
+										old_end, num_of_pages_increased , new_region) < 0) /* Map the memory to MEMRAM */
+		return -1; 
+
+	/* Enlist the new free region*/
+	new_region->rg_next = cur_vma->vm_freerg_list;
+	cur_vma->vm_freerg_list = new_region;
 
 	return 0;
 
@@ -497,7 +506,7 @@ int pgwrite(
 	return __write(proc, 0, destination, offset, data);
 }
 
-
+// Thuan: TODO : Implement this somewhere
 /*free_pcb_memphy - collect all memphy of pcb
  *@caller: caller
  *@vmaid: ID vm area to alloc memory region

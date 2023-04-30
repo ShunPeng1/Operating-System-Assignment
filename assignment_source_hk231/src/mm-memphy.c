@@ -179,6 +179,27 @@ int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
 	return 0;
 }
 
+// Concat a frame linked list to used frame list
+int MEMPHY_concat_usedfp(struct memphy_struct *mp, struct framephy_struct* start_node) {
+    if (mp == NULL || start_node == NULL) {
+        return -1;
+    }
+
+    // Find the last node in the used_fp_list
+    struct framephy_struct *last_node = mp->used_fp_list;
+    while (last_node != NULL && last_node->fp_next != NULL) {
+        last_node = last_node->fp_next;
+    }
+
+    // Concatenate the start_node to the end of the used_fp_list
+    if (last_node == NULL) {
+        mp->used_fp_list = start_node;
+    } else {
+        last_node->fp_next = start_node;
+    }
+
+    return 0;
+}
 
 /*
  *  Init MEMPHY struct
