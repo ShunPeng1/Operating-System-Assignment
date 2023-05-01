@@ -20,6 +20,9 @@
 #define SEGMENT_LEN     FIRST_LV_LEN
 #define PAGE_LEN        SECOND_LV_LEN
 
+// Quang added
+#define SWPTYP		0	// swptyp is constant 0, because we have only 1 swap memory region 
+
 #define NUM_PAGES	(1 << (ADDRESS_SIZE - OFFSET_LEN))
 #define PAGE_SIZE	(1 << OFFSET_LEN)
 

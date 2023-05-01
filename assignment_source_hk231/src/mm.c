@@ -43,6 +43,7 @@ int init_pte(uint32_t *pte,
 	return 0;   
 }
 
+// Quang modified this
 /* 
  * pte_set_swap - Set PTE entry for swapped page
  * @pte    : target page table entry (PTE)
@@ -51,7 +52,8 @@ int init_pte(uint32_t *pte,
  */
 int pte_set_swap(uint32_t *pte, int swptyp, int swpoff)
 {
-	SETBIT(*pte, PAGING_PTE_PRESENT_MASK);
+	// SETBIT(*pte, PAGING_PTE_PRESENT_MASK);	// This is very concerning ??? How can a page be present and swapped at the same time ???
+	CLRBIT(*pte, PAGING_PTE_PRESENT_MASK);		// Quang changed to this
 	SETBIT(*pte, PAGING_PTE_SWAPPED_MASK);
 
 	SETVAL(*pte, swptyp, PAGING_PTE_SWPTYP_MASK, PAGING_PTE_SWPTYP_LOBIT);
@@ -109,7 +111,9 @@ int vmap_page_range(struct pcb_t *caller, // process call
 		caller->mm->pgd[page_number_begin + pgit] = pte; // assign the page table directory [ page number ] = page table entry
 		
 		/* Enqueue new usage page */
-		enlist_pgn_node(&caller->mm->fifo_pgn, page_number_begin+pgit);
+		// Quang
+		// enlist_pgn_node(&caller->mm->fifo_pgn, page_number_begin+pgit);
+		enlist_tail_pgn_node(&caller->mm->fifo_pgn, page_number_begin+pgit);
 		
 		pgit++;
 	}
@@ -296,6 +300,7 @@ int enlist_vm_rg_node(struct vm_rg_struct **rglist, struct vm_rg_struct* rgnode)
 	return 0;
 }
 
+
 int enlist_pgn_node(struct pgn_t **plist, int pgn)
 {
 	struct pgn_t* pnode = malloc(sizeof(struct pgn_t));
@@ -303,6 +308,24 @@ int enlist_pgn_node(struct pgn_t **plist, int pgn)
 	pnode->pgn = pgn;
 	pnode->pg_next = *plist;
 	*plist = pnode;
+
+	return 0;
+}
+
+// Quang modified this to enlist at the tail instead of head to FIFO more easily
+int enlist_tail_pgn_node(struct pgn_t **plist, int pgn)
+{
+	struct pgn_t* pnode = malloc(sizeof(struct pgn_t));
+	pnode->pgn = pgn;
+	pnode->pg_next = NULL;
+
+	struct pgn_t* head = *plist;
+	struct pgn_t **pointer_to_pointer = &head;
+	while (*pointer_to_pointer != NULL)
+	{
+		pointer_to_pointer = &(*pointer_to_pointer)->pg_next;
+	}
+	*pointer_to_pointer = pnode;
 
 	return 0;
 }

@@ -74,13 +74,13 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 
 
 	/* DEBUGGING */
-	
+#if VMDBG
 	//print_list_vma(caller->mm->mmap);
 	//print_list_rg(&(caller->mm->symrgtbl[vmaid]));
 	//print_list_fp(caller->mram->free_fp_list);
 	//print_list_pgn(caller->mm->fifo_pgn);
 	//print_pgtbl(caller, 0 , -1);
-	
+#endif // VMDBG
 	return 0;
 }
 
@@ -328,6 +328,7 @@ int pgfree_data(struct pcb_t *proc, uint32_t reg_index)
 	 return __free(proc, 0, reg_index);
 }
 
+// TODO Quang
 /*pg_getpage - get the page in ram
  *@mm: memory region
  *@pagenum: PGN
@@ -350,6 +351,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 		/* TODO: Play with your paging theory here */
 		/* Find victim page */
 		find_victim_page(caller->mm, &vicpgn);
+		uint32_t ram_fpn = caller->mm->pgd[vicpgn];
 
 		/* Get free frame in MEMSWP */
 		MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
@@ -357,18 +359,22 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 
 		/* Do swap frame from MEMRAM to MEMSWP and vice versa*/
 		/* Copy victim frame to swap */
-		//__swap_cp_page();
+		__swap_cp_page(caller->mram, ram_fpn, caller->active_mswp, swpfpn);	// potential param type mismatch
 		/* Copy target frame from swap to mem */
-		//__swap_cp_page();
+		__swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, ram_fpn);	// potential param type mismatch
 
 		/* Update page table */
-		//pte_set_swap() &mm->pgd;
+		/* Update the victim page entry to SWAPPED */
+		pte_set_swap(&mm->pgd[vicpgn], SWPTYP, swpfpn);
 
 		/* Update its online status of the target page */
+		/* Update the accessed page entry to PRESENT*/
 		//pte_set_fpn() & mm->pgd[pgn];
-		pte_set_fpn(&pte, tgtfpn);
+		pte_set_fpn(&mm->pgd[pgn], ram_fpn);
+		pte = mm->pgd[pgn];
 
-		enlist_pgn_node(&caller->mm->fifo_pgn,pgn);
+		// enlist_pgn_node(&caller->mm->fifo_pgn, pgn);
+		enlist_tail_pgn_node(&caller->mm->fifo_pgn, pgn);
 	}
 
 	*fpn = PAGING_FPN(pte);
@@ -394,7 +400,7 @@ int pg_getval(struct mm_struct *mm, int addr, BYTE *data, struct pcb_t *caller)
 
 	int phyaddr = (fpn << PAGING_ADDR_FPN_LOBIT) + off;
 
-	MEMPHY_read(caller->mram,phyaddr, data);
+	MEMPHY_read(caller->mram, phyaddr, data);
 
 	return 0;
 }
@@ -417,7 +423,7 @@ int pg_setval(struct mm_struct *mm, int addr, BYTE value, struct pcb_t *caller)
 
 	int phyaddr = (fpn << PAGING_ADDR_FPN_LOBIT) + off;
 
-	MEMPHY_write(caller->mram,phyaddr, value);
+	MEMPHY_write(caller->mram, phyaddr, value);
 
 	 return 0;
 }
@@ -460,9 +466,9 @@ int pgread(
 	printf("read region=%d offset=%d value=%d\n", source, offset, data);
 #ifdef PAGETBL_DUMP
 	print_pgtbl(proc, 0, -1); //print max TBL
-#endif
+#endif // PAGETBL_DUMP
 	MEMPHY_dump(proc->mram);
-#endif
+#endif // IODUMP
 
 	return val;
 }
@@ -537,7 +543,7 @@ int free_pcb_memph(struct pcb_t *caller)
 }
 
 
-
+// Quang
 /*find_victim_page - find victim page
  *@caller: caller
  *@pgn: return page number
@@ -545,11 +551,18 @@ int free_pcb_memph(struct pcb_t *caller)
  */
 int find_victim_page(struct mm_struct *mm, int *retpgn) 
 {
-	struct pgn_t *pg = mm->fifo_pgn;
+	struct pgn_t *pgn_node = mm->fifo_pgn;
+	if (!pgn_node)
+	{
+		return 1;
+	}
 
 	/* TODO: Implement the theorical mechanism to find the victim page */
+	/* FIFO victim*/
+	*retpgn = pgn_node->pgn;
+	mm->fifo_pgn = mm->fifo_pgn->pg_next;
 
-	free(pg);
+	free(pgn_node);
 
 	return 0;
 }
