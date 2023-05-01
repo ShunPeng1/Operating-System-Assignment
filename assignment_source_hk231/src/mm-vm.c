@@ -263,23 +263,23 @@ struct vm_rg_struct *create_vm_rg_of_pcb_at_brk(struct pcb_t *caller, int vmaid,
 
 // ########### FREE ###########
 
+// Quang modified this
 /*enlist_vm_freerg_list - add new rg to freerg_list
  *@mm: memory region
  *@rg_elmt: new region
  *
  */
-int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
+int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct* rg_elmt)
 {
-	struct vm_rg_struct *rg_node = mm->mmap->vm_freerg_list;
+	struct vm_rg_struct *free_rg_head = mm->mmap->vm_freerg_list;
 
-	if (rg_elmt.rg_start >= rg_elmt.rg_end)
+	if (rg_elmt->rg_start >= rg_elmt->rg_end)
 		return -1;
 
-	if (rg_node != NULL)
-		rg_elmt.rg_next = rg_node;
+	rg_elmt->rg_next = free_rg_head;
 
 	/* Enlist the new region to the head of linked list*/
-	mm->mmap->vm_freerg_list = &rg_elmt;
+	mm->mmap->vm_freerg_list = rg_elmt;
 	return 0;
 }
 
@@ -292,30 +292,32 @@ int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
  */
 int __free(struct pcb_t *caller, int vmaid, int rgid)
 {
-	struct vm_rg_struct rgnode;
+	// struct vm_rg_struct rgnode;
 
 	if (rgid < 0 || rgid > PAGING_MAX_SYMTBL_SZ)
 		return -1;
 
 	/* TODO: Manage the collect freed region to freerg_list */
-	struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
-	struct vm_rg_struct *removeItem = get_symbol_region_by_id(caller->mm->mmap, rgid);
-	struct vm_rg_struct *delListHead = cur_vma->vm_freerg_list;
-	if(delListHead == NULL){
-		delListHead = &removeItem; 
-		delListHead->rg_start = removeItem->rg_start;
-		delListHead->rg_end = removeItem->rg_end;
-	}
-	else{
-		while(delListHead->rg_next != NULL){
-			delListHead = delListHead->rg_next;
-		}		
-		delListHead->rg_next = removeItem->rg_start;
-		delListHead->rg_end += removeItem->rg_end;
-	}
+	// struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
+	struct vm_rg_struct *removedItem = get_symbol_region_by_id(caller->mm, rgid);
+	// struct vm_rg_struct *delListHead = cur_vma->vm_freerg_list;
+	// if(delListHead == NULL){
+	// 	delListHead = &removeItem; 
+	// 	delListHead->rg_start = removeItem->rg_start;
+	// 	delListHead->rg_end = removeItem->rg_end;
+	// }
+	// else{
+	// 	while(delListHead->rg_next != NULL){
+	// 		delListHead = delListHead->rg_next;
+	// 	}		
+	// 	delListHead->rg_next = removeItem->rg_start;
+	// 	delListHead->rg_end += removeItem->rg_end;
+	// }
+
+
 	/*enlist the obsoleted memory region */
-	enlist_vm_freerg_list(caller->mm, *&rgnode);
-	free(removeItem);
+	enlist_vm_freerg_list(caller->mm, removedItem);
+
 	return 0;
 }
 
@@ -462,9 +464,9 @@ int pgread(
 	int val = __read(proc, 0, source, offset, &data);
 
 	destination = (uint32_t)data;
-#ifdef IODUMP
+#if IODUMP
 	printf("read region=%d offset=%d value=%d\n", source, offset, data);
-#ifdef PAGETBL_DUMP
+#if PAGETBL_DUMP
 	print_pgtbl(proc, 0, -1); // print max TBL
 #endif // PAGETBL_DUMP
 	MEMPHY_dump(proc->mram);
@@ -502,9 +504,9 @@ int pgwrite(
 	uint32_t destination, // Index of destination register
 	uint32_t offset)
 {
-#ifdef IODUMP
+#if IODUMP
 	printf("write region=%d offset=%d value=%d\n", destination, offset, data);
-#ifdef PAGETBL_DUMP
+#if PAGETBL_DUMP
 	print_pgtbl(proc, 0, -1); // print max TBL
 #endif
 	MEMPHY_dump(proc->mram);
