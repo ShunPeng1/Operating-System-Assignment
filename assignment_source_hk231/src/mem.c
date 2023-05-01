@@ -51,6 +51,9 @@ static struct trans_table_t * get_trans_table(
 	int i;
 	for (i = 0; i < page_table->size; i++) {
 		// TODO: Enter your code here
+		if(page_table->table->v_index == index){
+			return page_table->table;
+		}
 	}
 	return NULL;
 
