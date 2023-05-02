@@ -355,16 +355,18 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 		/* TODO: Play with your paging theory here */
 		/* Find victim page */
 		find_victim_page(caller->mm, &vicpgn);
-		uint32_t ram_fpn = caller->mm->pgd[vicpgn];
+		uint32_t victim_pte = caller->mm->pgd[vicpgn];
+		int victim_fpn = PAGING_FPN(victim_pte);
 
+		// TODO: change from pte to fpn
 		/* Get free frame in MEMSWP */
 		MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
 
 		/* Do swap frame from MEMRAM to MEMSWP and vice versa*/
 		/* Copy victim frame to swap */
-		__swap_cp_page(caller->mram, ram_fpn, caller->active_mswp, swpfpn);	// potential param type mismatch
+		__swap_cp_page(caller->mram, victim_fpn, caller->active_mswp, swpfpn);	// potential param type mismatch
 		/* Copy target frame from swap to mem */
-		__swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, ram_fpn);	// potential param type mismatch
+		__swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, victim_fpn);	// potential param type mismatch
 
 		/* Update page table */
 		/* Update the victim page entry to SWAPPED */
@@ -373,7 +375,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 		/* Update its online status of the target page */
 		/* Update the accessed page entry to PRESENT*/
 		//pte_set_fpn() & mm->pgd[pgn];
-		pte_set_fpn(&mm->pgd[pgn], ram_fpn);
+		pte_set_fpn(&mm->pgd[pgn], victim_fpn);
 		pte = mm->pgd[pgn];
 
 		// enlist_pgn_node(&caller->mm->fifo_pgn, pgn);
