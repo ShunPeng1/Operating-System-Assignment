@@ -13,7 +13,7 @@
 //#define MMDBG 1
 /* End of Thuan Approved */
 
-#define IODUMP 0
+#define IODUMP 1
 #define PAGETBL_DUMP 1
 
 #endif

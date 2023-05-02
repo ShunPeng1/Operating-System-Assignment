@@ -163,9 +163,11 @@ int MEMPHY_dump(struct memphy_struct *mp)
 	/*TODO dump memphy contnt mp->storage
 	 *     for tracing the memory content
 	 */
-	for (int i = 0; i < mp->maxsz; i++)
+	struct framephy_struct* used_framed = mp->used_fp_list;
+	while (used_framed)
 	{
-		printf("memory location %d: %c\n", i, mp->storage[i]);
+		printf("Used frame page number %d: %d\n", used_framed->fpn, mp->storage[used_framed->fpn]);
+		used_framed = used_framed->fp_next;
 	}
 	return 0;
 }
