@@ -59,12 +59,22 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 	struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
 	// int inc_sz = PAGING_PAGE_ALIGNSZ(size); // new increase size
 	// int inc_limit_ret
-	int old_sbrk;
 
-	old_sbrk = cur_vma->sbrk;
+	if (cur_vma->sbrk + size <= cur_vma->vm_end) // There is enough gap between sbrk and vm_end
+	{
+		caller->mm->symrgtbl[rgid].rg_start = cur_vma->sbrk;
+		caller->mm->symrgtbl[rgid].rg_end = cur_vma->sbrk + size;
+
+		cur_vma->sbrk += size;
+		return 0;
+	}
+
+	int old_sbrk = cur_vma->sbrk;
+
+	int demand_size = cur_vma->sbrk + size - cur_vma->vm_end;
 
 	/* TODO INCREASE THE LIMIT */
-	if (increase_vma_limit(caller, vmaid, size) < 0)
+	if (increase_vma_limit(caller, vmaid, demand_size) < 0)
 		return -1;
 
 	/*Successful increase limit */
