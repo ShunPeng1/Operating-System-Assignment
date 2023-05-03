@@ -70,7 +70,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 	/*Successful increase limit */
 	caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
 	caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size;
-
+	caller->mm->mmap->sbrk += size;
 	*alloc_addr = old_sbrk;
 
 	/* DEBUGGING */
@@ -126,7 +126,7 @@ int increase_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
 
 	/* The obtained vm area (only)
 	 * now will be alloc real ram region */
-	cur_vma->vm_end += inc_sz;
+	cur_vma->vm_end += num_of_pages_increased;
 	if (vm_map_ram(caller, next_area->rg_start, next_area->rg_end,	 // Notice that there is the TODO in mm.c vmap_page_range() in this code
 				   old_end, num_of_pages_increased, new_region) < 0) /* Map the memory to MEMRAM */
 		return -1;
