@@ -57,14 +57,14 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 
 	/*Attempt to increase limit to get space */
 	struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
-	int inc_sz = PAGING_PAGE_ALIGNSZ(size); // new increase size
+	// int inc_sz = PAGING_PAGE_ALIGNSZ(size); // new increase size
 	// int inc_limit_ret
 	int old_sbrk;
 
 	old_sbrk = cur_vma->sbrk;
 
 	/* TODO INCREASE THE LIMIT */
-	if (increase_vma_limit(caller, vmaid, inc_sz) < 0)
+	if (increase_vma_limit(caller, vmaid, size) < 0)
 		return -1;
 
 	/*Successful increase limit */
@@ -126,7 +126,7 @@ int increase_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
 
 	/* The obtained vm area (only)
 	 * now will be alloc real ram region */
-	cur_vma->vm_end += num_of_pages_increased;
+	cur_vma->vm_end += byte_increase_amt;
 	if (vm_map_ram(caller, next_area->rg_start, next_area->rg_end,	 // Notice that there is the TODO in mm.c vmap_page_range() in this code
 				   old_end, num_of_pages_increased, new_region) < 0) /* Map the memory to MEMRAM */
 		return -1;
@@ -188,6 +188,7 @@ int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_s
 					rgit->rg_next = NULL;		   /*  */
 				}
 			}
+			break;
 		}
 		else
 		{
@@ -411,7 +412,7 @@ int pg_getval(struct mm_struct *mm, int addr, BYTE *data, struct pcb_t *caller)
 	if (pg_getpage(mm, pgn, &fpn, caller) != 0)
 		return -1; /* invalid page access */
 
-	int phyaddr = (fpn << PAGING_ADDR_FPN_LOBIT) + off;
+	int phyaddr = (fpn * PAGING_PAGESZ) + off;
 
 	MEMPHY_read(caller->mram, phyaddr, data);
 
@@ -438,7 +439,7 @@ int pg_setval(struct mm_struct *mm, int addr, BYTE value, struct pcb_t *caller)
 	if (pg_getpage(mm, pgn, &fpn, caller) != 0)
 		return -1; /* invalid page access */
 
-	int phyaddr = (fpn << PAGING_ADDR_FPN_LOBIT) + off;
+	int phyaddr = (fpn * PAGING_PAGESZ) + off;
 
 	MEMPHY_write(caller->mram, phyaddr, value);
 
