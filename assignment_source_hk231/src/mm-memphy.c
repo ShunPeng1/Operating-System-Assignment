@@ -166,8 +166,15 @@ int MEMPHY_dump(struct memphy_struct *mp)
 	struct framephy_struct* used_framed = mp->used_fp_list;
 	while (used_framed)
 	{
-		printf("Used frame page number %d: %d\n", used_framed->fpn, mp->storage[used_framed->fpn]);
+		printf("Used frame page number %d\n", used_framed->fpn);
 		used_framed = used_framed->fp_next;
+	}
+	for (int byte_idx = 0; byte_idx < mp->maxsz; byte_idx++)
+	{
+		if (mp->storage[byte_idx] != 0)
+		{
+			printf("Offset %d: %d\n", byte_idx, mp->storage[byte_idx]);
+		}
 	}
 	return 0;
 }

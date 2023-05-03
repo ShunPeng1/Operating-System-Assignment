@@ -344,6 +344,11 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 {
 	uint32_t pte = mm->pgd[pgn];
 
+	if (pte == 0)
+	{
+		return -1;
+	}
+
 	if (!PAGING_PAGE_PRESENT(pte))
 	{ /* Page is not online, make it actively living */
 		int vicpgn, swpfpn;
@@ -354,7 +359,10 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 
 		/* TODO: Play with your paging theory here */
 		/* Find victim page */
-		find_victim_page(caller->mm, &vicpgn);
+		if (find_victim_page(caller->mm, &vicpgn) < 0)
+		{
+			return -1;
+		}
 		uint32_t victim_pte = caller->mm->pgd[vicpgn];
 		int victim_fpn = PAGING_FPN(victim_pte);
 
@@ -407,6 +415,10 @@ int pg_getval(struct mm_struct *mm, int addr, BYTE *data, struct pcb_t *caller)
 
 	MEMPHY_read(caller->mram, phyaddr, data);
 
+#if IODUMP
+	printf("Read from RAM successfully\n");
+#endif // IODUMP
+
 	return 0;
 }
 
@@ -429,6 +441,10 @@ int pg_setval(struct mm_struct *mm, int addr, BYTE value, struct pcb_t *caller)
 	int phyaddr = (fpn << PAGING_ADDR_FPN_LOBIT) + off;
 
 	MEMPHY_write(caller->mram, phyaddr, value);
+
+#if IODUMP
+	printf("Write to RAM successfully\n");
+#endif // IODUMP
 
 	return 0;
 }
@@ -559,7 +575,7 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
 	struct pgn_t *pgn_node = mm->fifo_pgn;
 	if (!pgn_node)
 	{
-		return 1;
+		return -1;
 	}
 
 	/* TODO: Implement the theorical mechanism to find the victim page */

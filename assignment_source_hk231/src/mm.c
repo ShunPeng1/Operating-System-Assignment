@@ -320,6 +320,12 @@ int enlist_tail_pgn_node(struct pgn_t **plist, int pgn)
 	pnode->pgn = pgn;
 	pnode->pg_next = NULL;
 
+	if (*plist == NULL)
+	{
+		*plist = pnode;
+		return 0;
+	}
+
 	struct pgn_t* head = *plist;
 	struct pgn_t **pointer_to_pointer = &head;
 	while (*pointer_to_pointer != NULL)
