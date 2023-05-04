@@ -49,6 +49,16 @@ void refill_slots_of_mlq(void)
 	}
 }
 
+struct pcb_t *get_proc_by_slot(){
+	for(int i = 0 ; i < MAX_PRIO; i++){
+			if( !empty(&mlq_ready_queue[i]) && (mlq_ready_queue[i].slot > 0) ) {
+				mlq_ready_queue[i].slot--;
+				return dequeue(&mlq_ready_queue[i]);
+			}
+		}
+	return NULL;
+}
+
 /* 
  *  Stateful design for routine calling
  *  based on the priority and our MLQ policy
@@ -68,18 +78,11 @@ struct pcb_t * get_mlq_proc(void) {
 	pthread_mutex_lock(&queue_lock);
 
 	if(!queue_empty()) {
-		for(int i = 0 ; i < MAX_PRIO; i++){
-			if( !empty(&mlq_ready_queue[i]) && (mlq_ready_queue[i].slot > 0) ) {
-				proc = dequeue(&mlq_ready_queue[i]);
-				mlq_ready_queue[i].slot--;
-
-				if ( queue_empty() && (mlq_ready_queue[i].slot <= 0) )
-				{
-					refill_slots_of_mlq();
-				}
-				break;
-			}
-		}
+		proc = get_proc_by_slot();
+	}
+	if(proc == NULL){
+		refill_slots_of_mlq();
+		proc = get_proc_by_slot();
 	}
 
 	pthread_mutex_unlock(&queue_lock);
