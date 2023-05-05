@@ -81,7 +81,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 	caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
 	caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size;
 	caller->mm->mmap->sbrk += size;
-	cur_vma->vm_end += PAGING_PAGE_ALIGNSZ(size);
+	cur_vma->vm_end += PAGING_PAGE_ALIGNSZ(demand_size);
 	*alloc_addr = old_sbrk;
 
 	/* DEBUGGING */
