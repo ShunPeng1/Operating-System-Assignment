@@ -193,6 +193,15 @@ int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
 	return 0;
 }
 
+int MEMPHY_clean_frame(struct memphy_struct *mp, int fpn)
+{
+	for (int i = 0; i < PAGING_PAGESZ; i++)
+	{
+		mp->storage[fpn * PAGING_PAGESZ + i] = 0;
+	}
+	return 0;
+}
+
 // Concat a frame linked list to used frame list
 int MEMPHY_concat_usedfp(struct memphy_struct *mp, struct framephy_struct *start_node)
 {

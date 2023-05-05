@@ -366,7 +366,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 		// int vicfpn;
 		// uint32_t vicpte;
 
-		int tgtfpn = PAGING_SWP(pte); // the target frame storing our variable
+		int tgtfpn = PAGING_SWAPFPN(pte); // the target frame storing our variable
 
 		/* TODO: Play with your paging theory here */
 		/* Find victim page */
@@ -385,6 +385,13 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 		__swap_cp_page(caller->mram, victim_fpn, caller->active_mswp, swpfpn);	// potential param type mismatch
 		/* Copy target frame from swap to mem */
 		__swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, victim_fpn);	// potential param type mismatch
+
+		#if IODUMP
+			printf("Swapped frame RAM %d with frame SWAP %d while getpage\n", victim_fpn, tgtfpn);
+		#endif 
+
+		/* Target frame in SWAP is now free, add that to free frame list of SWAP */
+		MEMPHY_put_freefp(caller->active_mswp, tgtfpn);
 
 		/* Update page table */
 		/* Update the victim page entry to SWAPPED */
@@ -565,7 +572,7 @@ int free_pcb_memph(struct pcb_t *caller)
 		}
 		else
 		{
-			fpn = PAGING_SWP(pte);
+			fpn = PAGING_SWAPFPN(pte);
 			MEMPHY_put_freefp(caller->active_mswp, fpn);
 		}
 	}

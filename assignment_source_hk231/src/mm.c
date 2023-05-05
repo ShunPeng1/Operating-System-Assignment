@@ -148,7 +148,7 @@ int alloc_pages_range(struct pcb_t *caller , int req_pgnum, struct framephy_stru
 		} 
 		else {  
 			/*
-			Thuan: When we don't have enough size in ram, we find the victim page, to get victim frame
+			Thuan: When we don't have enough size in ram, we find the victim page, to get a victim frame
 			Then we get a free frame in mswp for the victim frame to move in, update its pte
 			*/
 			int vicpgn, swp_fpn;
@@ -163,11 +163,15 @@ int alloc_pages_range(struct pcb_t *caller , int req_pgnum, struct framephy_stru
 			/* Do swap frame from MEMRAM to MEMSWP and vice versa*/
 			/* Copy victim frame to swap */
 			__swap_cp_page(caller->mram, victim_fpn, caller->active_mswp, swp_fpn);	// potential param type mismatch
+			MEMPHY_clean_frame(caller->mram, victim_fpn);
 				
 			/* Update page table */
 			/* Update the victim page entry to SWAPPED */
 			pte_set_swap(&caller->mm->pgd[vicpgn], SWPTYP, swp_fpn);
 
+			#if IODUMP
+				printf("Moved frame RAM %d to frame SWAP %d while alloc\n", vicpgn, swp_fpn);
+			#endif
 			
 			/* Thuan: Create new node with value fpn, then assign the new node become head of frm_lst */
 			struct framephy_struct *new_node = malloc(sizeof(struct framephy_struct));
