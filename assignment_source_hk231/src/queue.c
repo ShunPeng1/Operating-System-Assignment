@@ -45,7 +45,7 @@ void enqueue(struct queue_t *q, struct pcb_t *proc)
 {
     /* TODO: put a new process to queue [q] */
 
-    int maxSlot = MAX_PRIO - proc->prio;
+    int maxSlot = MAX_PRIO;
     if (q->size < maxSlot)
     {
         q->proc[q->size] = proc;
