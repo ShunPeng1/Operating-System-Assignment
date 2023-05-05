@@ -113,8 +113,8 @@ int vmap_page_range(struct pcb_t *caller, // process call
 		
 		/* Enqueue new usage page */
 		// Quang
-		// enlist_pgn_node(&caller->mm->fifo_pgn, page_number_begin+pgit);
-		enlist_tail_pgn_node(&caller->mm->fifo_pgn, page_number_begin+pgit);
+		// enlist_pgn_node(&caller->mm->fifo_using_pgn, page_number_begin+pgit);
+		enlist_tail_pgn_node(&caller->mm->fifo_using_pgn, page_number_begin+pgit);
 		
 		pgit++;
 	}
@@ -124,38 +124,58 @@ int vmap_page_range(struct pcb_t *caller, // process call
 
 /* 
  * alloc_pages_range - allocate req_pgnum of frame in ram
- * @memphy	  : ram or swap
+ * @caller	  : pcb_t that call
  * @req_pgnum : request page number
  * @frm_lst   : return the head of the free frame list you created
  * return: the size of the array of frm_list
  */
 
-int alloc_pages_range(struct memphy_struct *memphy , int req_pgnum, struct framephy_struct** frm_lst)
+int alloc_pages_range(struct pcb_t *caller , int req_pgnum, struct framephy_struct** frm_lst)
 {
-	int pgit, fpn;
+	int pgit, mram_fpn;
 
 	for(pgit = 0; pgit < req_pgnum; pgit++)
 	{
-		if(MEMPHY_get_freefp(memphy, &fpn) == 0) // Successfully Get the free frame number id in fpn
+		if(MEMPHY_get_freefp(caller->mram, &mram_fpn) == 0) // Successfully Get the free frame number id in fpn
 		{
+			/* Thuan: Create new node with value fpn, then assign the new node become head of frm_lst */
 			struct framephy_struct *new_node = malloc(sizeof(struct framephy_struct));
 
-			/* Thuan: Create new node with value fpn, then assign the new node become head of frm_lst */
-			new_node->fpn = fpn;
+			new_node->fpn = mram_fpn;
 			new_node->fp_next = *frm_lst;
 			*frm_lst = new_node;
 
 		} 
-		else {  // ERROR CODE of obtaining somes but not enough frames
-			/*@bksysnet: author provides a feasible solution of getting frames
-			*FATAL logic in here, wrong behaviour if we have not enough page
-			*i.e. we request 1000 frames meanwhile our RAM has size of 3 frames
-			*Don't try to perform that case in this simple work, it will result
-			*in endless procedure of swap-off to get frame and we have not provide 
-			*duplicate control mechanism, keep it simple
+		else {  
+			/*
+			Thuan: When we don't have enough size in ram, we find the victim page, to get victim frame
+			Then we get a free frame in mswp for the victim frame to move in, update its pte
 			*/
+			int vicpgn, swp_fpn;
+			find_victim_page(caller->mm, &vicpgn); // TODO what if there is not enough victim page in the loop? Ex: 3 frame in ram but alloc 1000 frame?
 
-			return pgit;
+			uint32_t victim_pte = caller->mm->pgd[vicpgn];
+			int victim_fpn = PAGING_FPN(victim_pte);
+
+			/* Get free frame in MEMSWP */
+			if(MEMPHY_get_freefp(caller->active_mswp, &swp_fpn) != 0) return -3000;  // ERROR CODE of obtaining somes but not enough frames
+
+			/* Do swap frame from MEMRAM to MEMSWP and vice versa*/
+			/* Copy victim frame to swap */
+			__swap_cp_page(caller->mram, victim_fpn, caller->active_mswp, swp_fpn);	// potential param type mismatch
+				
+			/* Update page table */
+			/* Update the victim page entry to SWAPPED */
+			pte_set_swap(&caller->mm->pgd[vicpgn], SWPTYP, swp_fpn);
+
+			
+			/* Thuan: Create new node with value fpn, then assign the new node become head of frm_lst */
+			struct framephy_struct *new_node = malloc(sizeof(struct framephy_struct));
+
+			new_node->fpn = victim_fpn; // we reuse the victim frame as new frame, it was pop out fifo_using_png in find_victim_page()
+			new_node->fp_next = *frm_lst;
+			*frm_lst = new_node;
+
 		} 
  	}
 
@@ -184,7 +204,7 @@ int vm_map_ram(struct pcb_t *caller, int astart, int aend, int mapstart, int inc
 	 *in endless procedure of swap-off to get frame and we have not provide 
 	 *duplicate control mechanism, keep it simple
 	 */
-	num_increase_alloc_page_by_mram = alloc_pages_range(caller->mram, increase_page_number, &mram_free_frame_list);
+	num_increase_alloc_page_by_mram = alloc_pages_range(caller, increase_page_number, &mram_free_frame_list);
 	//printf("DEBUG: alloc_pages_range\n");
 	if (num_increase_alloc_page_by_mram < 0 && num_increase_alloc_page_by_mram != -3000)
 		return -1;
@@ -210,8 +230,9 @@ int vm_map_ram(struct pcb_t *caller, int astart, int aend, int mapstart, int inc
 			
 			i_mswp++;
 		}
-		// Surely it must have enough size in swap right ?
 		*/
+		// Surely it must have enough size in swap right ?
+		
 	}
 	
 	vmap_page_range(caller, mapstart, num_increase_alloc_page_by_mram, mram_free_frame_list, ret_rg); // Add the free page and frame to the page table
@@ -277,7 +298,7 @@ int init_mm(struct mm_struct *mm, struct pcb_t *caller)
 	vma->vm_mm = mm; /*point back to vma owner */
 
 	mm->mmap = vma;
-	mm->fifo_pgn = NULL;
+	mm->fifo_using_pgn = NULL;
 
 	return 0;
 }

@@ -71,7 +71,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 
 	int old_sbrk = cur_vma->sbrk;
 
-	int demand_size = cur_vma->sbrk + size - cur_vma->vm_end;
+	int demand_size = cur_vma->sbrk + size - cur_vma->vm_end; // 0 + 300 - 0 ; 300 + 100 - 512
 
 	/* TODO INCREASE THE LIMIT */
 	if (increase_vma_limit(caller, vmaid, demand_size) < 0)
@@ -89,7 +89,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 	//print_list_vma(caller->mm->mmap);
 	//print_list_rg(&(caller->mm->symrgtbl[vmaid]));
 	//print_list_fp(caller->mram->free_fp_list);
-	//print_list_pgn(caller->mm->fifo_pgn);
+	//print_list_pgn(caller->mm->fifo_using_pgn);
 	//print_pgtbl(caller, 0 , -1);
 #endif // VMDBG
 	return 0;
@@ -377,7 +377,6 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 		uint32_t victim_pte = caller->mm->pgd[vicpgn];
 		int victim_fpn = PAGING_FPN(victim_pte);
 
-		// TODO: change from pte to fpn
 		/* Get free frame in MEMSWP */
 		MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
 
@@ -397,8 +396,8 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 		pte_set_fpn(&mm->pgd[pgn], victim_fpn);
 		pte = mm->pgd[pgn];
 
-		// enlist_pgn_node(&caller->mm->fifo_pgn, pgn);
-		enlist_tail_pgn_node(&caller->mm->fifo_pgn, pgn);
+		// enlist_pgn_node(&caller->mm->fifo_using_pgn, pgn);
+		enlist_tail_pgn_node(&caller->mm->fifo_using_pgn, pgn);
 	}
 
 	*fpn = PAGING_FPN(pte);
@@ -583,7 +582,7 @@ int free_pcb_memph(struct pcb_t *caller)
  */
 int find_victim_page(struct mm_struct *mm, int *retpgn)
 {
-	struct pgn_t *pgn_node = mm->fifo_pgn;
+	struct pgn_t *pgn_node = mm->fifo_using_pgn;
 	if (!pgn_node)
 	{
 		return -1;
@@ -592,7 +591,7 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
 	/* TODO: Implement the theorical mechanism to find the victim page */
 	/* FIFO victim*/
 	*retpgn = pgn_node->pgn;
-	mm->fifo_pgn = mm->fifo_pgn->pg_next;
+	mm->fifo_using_pgn = mm->fifo_using_pgn->pg_next;
 
 	free(pgn_node);
 

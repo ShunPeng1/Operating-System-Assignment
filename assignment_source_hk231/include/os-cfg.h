@@ -2,7 +2,7 @@
 #define OSCFG_H
 
 #define MLQ_SCHED 1
-#define MAX_PRIO 16
+#define MAX_PRIO 140
 
 #define MM_PAGING
 /* Thuan Approved configable */

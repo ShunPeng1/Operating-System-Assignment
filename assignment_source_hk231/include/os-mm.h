@@ -60,7 +60,7 @@ struct mm_struct {
    struct vm_rg_struct symrgtbl[PAGING_MAX_SYMTBL_SZ]; // each variable in a process have its virtual memory, this is a fixed array for variable
    
    /* list of free page */
-   struct pgn_t *fifo_pgn; //head of free page linked list, 
+   struct pgn_t *fifo_using_pgn; //head of free page linked list, 
 };
 
 /*

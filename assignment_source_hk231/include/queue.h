@@ -4,7 +4,7 @@
 
 #include "common.h"
 
-#define MAX_QUEUE_SIZE 140
+#define MAX_QUEUE_SIZE 10
 
 struct queue_t {
 	struct pcb_t * proc[MAX_QUEUE_SIZE];
