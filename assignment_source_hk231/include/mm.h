@@ -105,7 +105,7 @@ int enlist_tail_pgn_node(struct pgn_t **pgnlist, int pgn);
 int vmap_page_range(struct pcb_t *caller, int addr, int pgnum, 
                     struct framephy_struct *frames, struct vm_rg_struct *ret_rg);
 int vm_map_ram(struct pcb_t *caller, int astart, int send, int mapstart, int incpgnum, struct vm_rg_struct *ret_rg);
-int alloc_pages_range(struct pcb_t *caller , int req_pgnum, struct framephy_struct** frm_lst);
+int alloc_pages_range(struct pcb_t *caller , int req_pgnum, struct framephy_struct** frm_lst, int exception_pg);
 int __swap_cp_page(struct memphy_struct *mpsrc, int srcfpn,
                 struct memphy_struct *mpdst, int dstfpn) ;
 int pte_set_fpn(uint32_t *pte, int fpn);
@@ -141,7 +141,7 @@ struct vm_rg_struct * get_symbol_region_by_id(struct mm_struct* mm, int rgid);
 int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int vmaend);
 int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_struct *newrg);
 int increase_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz);
-int find_victim_page(struct mm_struct* mm, int *pgn);
+int find_victim_page(struct mm_struct *mm, int *retpgn, int exception_page);
 struct vm_rg_struct* create_vm_rg_of_pcb_at_brk(struct pcb_t *caller, int vmaid, int size, int alignedsz);
 struct vm_area_struct *get_vma_by_index(struct mm_struct *mm, int vmaid);
 

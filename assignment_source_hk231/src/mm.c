@@ -127,10 +127,11 @@ int vmap_page_range(struct pcb_t *caller, // process call
  * @caller	  : pcb_t that call
  * @req_pgnum : request page number
  * @frm_lst   : return the head of the free frame list you created
+ * @exception_page: the page that hold the starting address of the new region, thus can't be swapped out
  * return: the size of the array of frm_list
  */
 
-int alloc_pages_range(struct pcb_t *caller , int req_pgnum, struct framephy_struct** frm_lst)
+int alloc_pages_range(struct pcb_t *caller , int req_pgnum, struct framephy_struct** frm_lst, int exception_page)
 {
 	int pgit, mram_fpn;
 
@@ -152,8 +153,10 @@ int alloc_pages_range(struct pcb_t *caller , int req_pgnum, struct framephy_stru
 			Then we get a free frame in mswp for the victim frame to move in, update its pte
 			*/
 			int vicpgn, swp_fpn;
-			find_victim_page(caller->mm, &vicpgn); // TODO what if there is not enough victim page in the loop? Ex: 3 frame in ram but alloc 1000 frame?
-
+			if (find_victim_page(caller->mm, &vicpgn, exception_page) != 0) // TODO what if there is not enough victim page in the loop? Ex: 3 frame in ram but alloc 1000 frame?
+			{
+				return -3000;
+			}
 			uint32_t victim_pte = caller->mm->pgd[vicpgn];
 			int victim_fpn = PAGING_FPN(victim_pte);
 
@@ -208,7 +211,7 @@ int vm_map_ram(struct pcb_t *caller, int astart, int aend, int mapstart, int inc
 	 *in endless procedure of swap-off to get frame and we have not provide 
 	 *duplicate control mechanism, keep it simple
 	 */
-	num_increase_alloc_page_by_mram = alloc_pages_range(caller, increase_page_number, &mram_free_frame_list);
+	num_increase_alloc_page_by_mram = alloc_pages_range(caller, increase_page_number, &mram_free_frame_list, PAGING_PGN(astart));
 	//printf("DEBUG: alloc_pages_range\n");
 	if (num_increase_alloc_page_by_mram < 0 && num_increase_alloc_page_by_mram != -3000)
 		return -1;

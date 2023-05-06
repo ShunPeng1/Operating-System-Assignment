@@ -370,7 +370,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 
 		/* TODO: Play with your paging theory here */
 		/* Find victim page */
-		if (find_victim_page(caller->mm, &vicpgn) < 0)
+		if (find_victim_page(caller->mm, &vicpgn, -1) != 0)
 		{
 			return -1;
 		}
@@ -587,7 +587,7 @@ int free_pcb_memph(struct pcb_t *caller)
  *@pgn: return page number
  *
  */
-int find_victim_page(struct mm_struct *mm, int *retpgn)
+int find_victim_page(struct mm_struct *mm, int *retpgn, int exception_page)
 {
 	struct pgn_t *pgn_node = mm->fifo_using_pgn;
 	if (!pgn_node)
@@ -598,8 +598,37 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
 	/* TODO: Implement the theorical mechanism to find the victim page */
 	/* FIFO victim*/
 	*retpgn = pgn_node->pgn;
-	mm->fifo_using_pgn = mm->fifo_using_pgn->pg_next;
+	if (exception_page == -1)
+	{
+		mm->fifo_using_pgn = mm->fifo_using_pgn->pg_next;
+	}
+	else
+	{
+		if (*retpgn == exception_page)	// current return page number matches the exception
+		{
+			#if IODUMP
+				printf("Matched exception page\n");
+			#endif
+			if (pgn_node->pg_next == NULL)	// cannot find another page
+			{
+				return -1;
+			}
+			else	// take the next page number
+			{
+				pgn_node = pgn_node->pg_next;
+				*retpgn = pgn_node->pgn;
+				mm->fifo_using_pgn->pg_next = mm->fifo_using_pgn->pg_next->pg_next;
+			}
+		}
+		else	// current return page number doesn't matches the exception, so don't care
+		{
+			mm->fifo_using_pgn = mm->fifo_using_pgn->pg_next;
+		}
+	}
 
+	#if IODUMP
+		printf("Found victim page\n");
+	#endif
 	free(pgn_node);
 
 	return 0;
