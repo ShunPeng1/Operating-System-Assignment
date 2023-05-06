@@ -148,6 +148,10 @@ int alloc_pages_range(struct pcb_t *caller , int req_pgnum, struct framephy_stru
 
 		} 
 		else {  
+
+			/* it leaves the case of memory is enough but half in ram, half in swap
+			* do the swaping all to swapper to get the all in ram */
+
 			/*
 			Thuan: When we don't have enough size in ram, we find the victim page, to get a victim frame
 			Then we get a free frame in mswp for the victim frame to move in, update its pte
@@ -223,23 +227,6 @@ int vm_map_ram(struct pcb_t *caller, int astart, int aend, int mapstart, int inc
 		printf("OOM: vm_map_ram out of memory \n");
 #endif
 		return -1;
-	}
-
-	/* it leaves the case of memory is enough but half in ram, half in swap
-	 * do the swaping all to swapper to get the all in ram */
-	if(num_increase_alloc_page_by_mram != increase_page_number){ // Thuan TODO swap from swap to main frame
-		/*
-		struct framephy_struct *mswp_free_frame_list = NULL;
-		int increase_page_requesting_by_mswp = increase_page_number - num_increase_alloc_page_by_mram;
-		int i_mswp = 0; // from 1 -> 4
-		while(increase_page_requesting_by_mswp != 0 && i_mswp < 4){
-			increase_page_requesting_by_mswp -= alloc_pages_range(caller->mswp[i_mswp], increase_page_requesting_by_mswp, &mswp_free_frame_list);
-			
-			i_mswp++;
-		}
-		*/
-		// Surely it must have enough size in swap right ?
-		
 	}
 	
 	vmap_page_range(caller, mapstart, num_increase_alloc_page_by_mram, mram_free_frame_list, ret_rg); // Add the free page and frame to the page table

@@ -598,33 +598,27 @@ int find_victim_page(struct mm_struct *mm, int *retpgn, int exception_page)
 	/* TODO: Implement the theorical mechanism to find the victim page */
 	/* FIFO victim*/
 	*retpgn = pgn_node->pgn;
-	if (exception_page == -1)
+	if (*retpgn != exception_page) // current return page number doesn't matches the exception, so don't care
 	{
 		mm->fifo_using_pgn = mm->fifo_using_pgn->pg_next;
 	}
-	else
-	{
-		if (*retpgn == exception_page)	// current return page number matches the exception
+	else{ // current return page number matches the exception
+		#if IODUMP
+			printf("Matched exception page\n");
+		#endif
+		if (pgn_node->pg_next == NULL)	// cannot find another page
 		{
-			#if IODUMP
-				printf("Matched exception page\n");
-			#endif
-			if (pgn_node->pg_next == NULL)	// cannot find another page
-			{
-				return -1;
-			}
-			else	// take the next page number
-			{
-				pgn_node = pgn_node->pg_next;
-				*retpgn = pgn_node->pgn;
-				mm->fifo_using_pgn->pg_next = mm->fifo_using_pgn->pg_next->pg_next;
-			}
+			return -1;
 		}
-		else	// current return page number doesn't matches the exception, so don't care
+		else	// take the next page number
 		{
-			mm->fifo_using_pgn = mm->fifo_using_pgn->pg_next;
+			pgn_node = pgn_node->pg_next;
+			*retpgn = pgn_node->pgn;
+			mm->fifo_using_pgn->pg_next = mm->fifo_using_pgn->pg_next->pg_next;
 		}
+	
 	}
+	
 
 	#if IODUMP
 		printf("Found victim page\n");
