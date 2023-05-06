@@ -74,7 +74,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 	int demand_size = cur_vma->sbrk + size - cur_vma->vm_end; // 0 + 300 - 0 ; 300 + 100 - 512
 
 	/* TODO INCREASE THE LIMIT */
-	if (increase_vma_limit(caller, vmaid, demand_size) < 0)
+	if (increase_vma_limit(caller, vmaid, demand_size, size) < 0)
 		return -1;
 
 	/*Successful increase limit */
@@ -121,12 +121,12 @@ int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int 
  *@inc_sz: increment byte size
  *
  */
-int increase_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
+int increase_vma_limit(struct pcb_t *caller, int vmaid, int demand_size, int true_inc_size)
 {
 	struct vm_rg_struct *new_region = malloc(sizeof(struct vm_rg_struct));
-	int byte_increase_amt = PAGING_PAGE_ALIGNSZ(inc_sz); // this is equal to inc_sz
+	int byte_increase_amt = PAGING_PAGE_ALIGNSZ(demand_size); // this is equal to inc_sz
 	int num_of_pages_increased = byte_increase_amt / PAGING_PAGESZ;
-	struct vm_rg_struct *next_area = create_vm_rg_of_pcb_at_brk(caller, vmaid, inc_sz, byte_increase_amt); // this is a newly allocated region from [sbrk , sbrk + inc_sz], only a temporary struct to store start and end
+	struct vm_rg_struct *next_area = create_vm_rg_of_pcb_at_brk(caller, vmaid, true_inc_size); // this is a newly allocated region from [sbrk , sbrk + inc_sz], only a temporary struct to store start and end
 	struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
 
 	int old_end = cur_vma->vm_end;
@@ -259,7 +259,7 @@ struct vm_area_struct *get_vma_by_index(struct mm_struct *mm, int vmaid)
  *@vmaend: vma end
  *
  */
-struct vm_rg_struct *create_vm_rg_of_pcb_at_brk(struct pcb_t *caller, int vmaid, int size, int alignedsz)
+struct vm_rg_struct *create_vm_rg_of_pcb_at_brk(struct pcb_t *caller, int vmaid, int size)
 {
 	struct vm_rg_struct *new_region;
 	struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
