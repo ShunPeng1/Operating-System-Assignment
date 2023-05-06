@@ -5,6 +5,10 @@
 #define PAGING_MAX_MMSWP 4 /* max number of supported swapped space */
 #define PAGING_MAX_SYMTBL_SZ 30  /* the max number of variable allowed in each program */
 
+
+#include <sys/types.h>
+#include <pthread.h>
+
 typedef char BYTE;
 typedef uint32_t addr_t;
 //typedef unsigned int uint32_t;
@@ -91,6 +95,10 @@ struct memphy_struct {
    /* Management structure */
    struct framephy_struct *free_fp_list; // free frame linked list
    struct framephy_struct *used_fp_list; // used frame linked list
+
+   /* Mutex lock for mutiple cpu access*/
+   //pthread_mutex_t free_fp_lock; 
+   //pthread_mutex_t used_fp_lock;
 };
 
 #endif

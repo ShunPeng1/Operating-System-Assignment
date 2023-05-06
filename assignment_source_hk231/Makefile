@@ -37,8 +37,11 @@ sched: $(SCHED_OBJ)
 os: $(OS_OBJ)
 	$(MAKE) $(LFLAGS) $(OS_OBJ) -o os $(LIB)
 
+#$(OBJ)/%.o: %.c ${HEADER} $(OBJ)
+#	$(MAKE) $(CFLAGS) $< -o $@
 $(OBJ)/%.o: %.c ${HEADER} $(OBJ)
-	$(MAKE) $(CFLAGS) $< -o $@
+	$(MAKE) $(CFLAGS) $(LIB) $< -o $@
+
 
 # Prepare objectives container
 $(OBJ):

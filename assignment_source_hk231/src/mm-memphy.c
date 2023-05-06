@@ -5,6 +5,7 @@
  */
 
 #include "mm.h"
+#include "os-mm.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -237,6 +238,8 @@ int init_memphy(struct memphy_struct *mp, int max_size, int randomflg)
 	mp->maxsz = max_size;
 
 	MEMPHY_format(mp, PAGING_PAGESZ);
+
+
 
 	mp->rdmflg = (randomflg != 0) ? 1 : 0;
 
