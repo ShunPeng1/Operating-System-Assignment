@@ -62,10 +62,16 @@ int MEMPHY_read(struct memphy_struct *mp, int addr, BYTE *value)
 	if (mp == NULL)
 		return -1;
 
+	pthread_mutex_lock(&mp->lock);
+
 	if (mp->rdmflg)
 		*value = mp->storage[addr];
-	else /* Sequential access device */
+	else /* Sequential access device */{
+		pthread_mutex_unlock(&mp->lock);
 		return MEMPHY_seq_read(mp, addr, value);
+	}
+		
+	pthread_mutex_unlock(&mp->lock);
 
 	return 0;
 }
@@ -99,13 +105,19 @@ int MEMPHY_seq_write(struct memphy_struct *mp, int addr, BYTE value)
  */
 int MEMPHY_write(struct memphy_struct *mp, int addr, BYTE data)
 {
+	
 	if (mp == NULL)
 		return -1;
-
+	
+	pthread_mutex_lock(&mp->lock);
 	if (mp->rdmflg)
 		mp->storage[addr] = data;
 	else /* Sequential access device */
+	{
+		pthread_mutex_unlock(&mp->lock);
 		return MEMPHY_seq_write(mp, addr, data);
+	}
+	pthread_mutex_unlock(&mp->lock);
 
 	return 0;
 }
@@ -145,10 +157,13 @@ int MEMPHY_format(struct memphy_struct *mp, int pagesz)
 // Return the free frame number id in retfpn, from the head of free frame list and free it
 int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
 {
+	pthread_mutex_lock(&mp->lock_free_fp);
 	struct framephy_struct *fp = mp->free_fp_list;
 
-	if (fp == NULL)
+	if (fp == NULL){
+		pthread_mutex_unlock(&mp->lock_free_fp);
 		return -1;
+	}
 
 	*retfpn = fp->fpn;
 	mp->free_fp_list = fp->fp_next;
@@ -157,7 +172,7 @@ int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
 	 * No garbage collector acting then it not been released
 	 */
 	free(fp);
-
+	pthread_mutex_unlock(&mp->lock_free_fp);
 	return 0;
 }
 
@@ -166,6 +181,9 @@ int MEMPHY_dump(struct memphy_struct *mp)
 	/*TODO dump memphy contnt mp->storage
 	 *     for tracing the memory content
 	 */
+
+	pthread_mutex_lock(&mp->lock_used_fp);
+
 	struct framephy_struct* used_framed = mp->used_fp_list;
 	while (used_framed)
 	{
@@ -179,12 +197,15 @@ int MEMPHY_dump(struct memphy_struct *mp)
 			printf("Offset %d: %d\n", byte_idx, mp->storage[byte_idx]);
 		}
 	}
+	pthread_mutex_unlock(&mp->lock_used_fp);
+
 	return 0;
 }
 
 // Create a framephy_struct to the head of free frame linked list, fpn is the frame number id
 int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
 {
+	pthread_mutex_lock(&mp->lock_free_fp);
 	struct framephy_struct *fp = mp->free_fp_list;
 	struct framephy_struct *newnode = malloc(sizeof(struct framephy_struct));
 
@@ -193,20 +214,27 @@ int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
 	newnode->fp_next = fp;
 	mp->free_fp_list = newnode;
 
+	pthread_mutex_unlock(&mp->lock_free_fp);
 	return 0;
 }
 
 int MEMPHY_clean_frame(struct memphy_struct *mp, int fpn)
 {
+	pthread_mutex_lock(&mp->lock);
 	memset(mp->storage + fpn * PAGING_PAGESZ, 0, PAGING_PAGESZ);
+	pthread_mutex_unlock(&mp->lock);
 	return 0;
 }
 
 // Concat a frame linked list to used frame list
 int MEMPHY_concat_usedfp(struct memphy_struct *mp, struct framephy_struct *start_node)
 {
+	pthread_mutex_lock(&mp->lock_used_fp);
+
 	if (mp == NULL || start_node == NULL)
 	{
+		pthread_mutex_unlock(&mp->lock_used_fp);
+
 		return -1;
 	}
 
@@ -227,6 +255,8 @@ int MEMPHY_concat_usedfp(struct memphy_struct *mp, struct framephy_struct *start
 		last_node->fp_next = start_node;
 	}
 
+	pthread_mutex_unlock(&mp->lock_used_fp);
+
 	return 0;
 }
 
@@ -240,8 +270,9 @@ int init_memphy(struct memphy_struct *mp, int max_size, int randomflg)
 
 	MEMPHY_format(mp, PAGING_PAGESZ);
 
-	pthread_mutex_init(&mp->free_fp_lock, NULL);
-	pthread_mutex_init(&mp->used_fp_lock, NULL);
+	pthread_mutex_init(&mp->lock_free_fp, NULL);
+	pthread_mutex_init(&mp->lock_used_fp, NULL);
+	pthread_mutex_init(&mp->lock, NULL);
 
 	mp->rdmflg = (randomflg != 0) ? 1 : 0;
 
