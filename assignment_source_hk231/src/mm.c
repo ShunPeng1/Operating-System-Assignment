@@ -291,7 +291,7 @@ int init_mm(struct mm_struct *mm, struct pcb_t *caller)
 {
 	struct vm_area_struct * vma = malloc(sizeof(struct vm_area_struct));
 
-	mm->pgd = malloc(PAGING_MAX_PGN*sizeof(uint32_t));
+	mm->pgd = calloc(PAGING_MAX_PGN, sizeof(uint32_t));
 
 	/* By default the owner comes with at least one vma */
 	vma->vm_id = 1;

@@ -7,6 +7,7 @@
 #include "mm.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 /*
  *  MEMPHY_move_cursor - move MEMPHY cursor
@@ -195,10 +196,7 @@ int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
 
 int MEMPHY_clean_frame(struct memphy_struct *mp, int fpn)
 {
-	for (int i = 0; i < PAGING_PAGESZ; i++)
-	{
-		mp->storage[fpn * PAGING_PAGESZ + i] = 0;
-	}
+	memset(mp->storage + fpn * PAGING_PAGESZ, 0, PAGING_PAGESZ);
 	return 0;
 }
 
@@ -235,7 +233,7 @@ int MEMPHY_concat_usedfp(struct memphy_struct *mp, struct framephy_struct *start
  */
 int init_memphy(struct memphy_struct *mp, int max_size, int randomflg)
 {
-	mp->storage = (BYTE *)malloc(max_size * sizeof(BYTE));
+	mp->storage = (BYTE *)calloc(max_size, sizeof(BYTE));
 	mp->maxsz = max_size;
 
 	MEMPHY_format(mp, PAGING_PAGESZ);
