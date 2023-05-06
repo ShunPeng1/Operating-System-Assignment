@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <pthread.h>
 
 /*
  *  MEMPHY_move_cursor - move MEMPHY cursor
@@ -239,7 +240,8 @@ int init_memphy(struct memphy_struct *mp, int max_size, int randomflg)
 
 	MEMPHY_format(mp, PAGING_PAGESZ);
 
-
+	pthread_mutex_init(&mp->free_fp_lock, NULL);
+	pthread_mutex_init(&mp->used_fp_lock, NULL);
 
 	mp->rdmflg = (randomflg != 0) ? 1 : 0;
 
