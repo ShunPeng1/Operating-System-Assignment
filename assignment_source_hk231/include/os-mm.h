@@ -39,9 +39,9 @@ struct vm_rg_struct {
 struct vm_area_struct {
    unsigned long vm_id;
    unsigned long vm_start; 
-   unsigned long vm_end;
+   unsigned long vm_end; // vm_end is used as at the end of the page
 
-   unsigned long sbrk; // sbrk is a limit, vm_start < sbrk <= vm_end, for not allocate so much memory
+   unsigned long sbrk; // sbrk is used as a end at current using memory, vm_start < sbrk <= vm_end, for not allocate so much memory
 /*
  * Derived field
  * unsigned long vm_limit = vm_end - vm_start
@@ -97,9 +97,9 @@ struct memphy_struct {
    struct framephy_struct *used_fp_list; // used frame linked list
 
    /* Mutex lock for mutiple cpu access*/
-   pthread_mutex_t free_fp_lock; 
-   pthread_mutex_t used_fp_lock;
-   pthread_mutex_t storage_lock;
+   pthread_mutex_t lock_free_fp; // lock for free frame list
+   pthread_mutex_t lock_used_fp; // lock for used frame list
+   pthread_mutex_t lock; // lock for storage
 };
 
 #endif

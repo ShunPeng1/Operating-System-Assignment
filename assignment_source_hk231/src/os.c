@@ -265,6 +265,14 @@ int main(int argc, char * argv[]) {
 	}
 	pthread_join(ld, NULL);
 
+
+	/* Detele MEM RAM */
+	delete_memphy(&mram, memramsz, rdmflag);
+
+    /* Delete all MEM SWAP */ 
+	for(sit = 0; sit < PAGING_MAX_MMSWP; sit++)
+	       delete_memphy(&mswp[sit], memswpsz[sit], rdmflag);
+
 	/* Stop timer */
 	stop_timer();
 
