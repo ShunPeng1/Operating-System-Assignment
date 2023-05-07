@@ -432,7 +432,7 @@ int pg_getval(struct mm_struct *mm, int addr, BYTE *data, struct pcb_t *caller)
 
 	MEMPHY_read(caller->mram, phyaddr, data);
 
-#if IODUMP
+#if PAGING_DBG
 	printf("Read from RAM successfully\n");
 #endif // IODUMP
 
@@ -459,7 +459,7 @@ int pg_setval(struct mm_struct *mm, int addr, BYTE value, struct pcb_t *caller)
 
 	MEMPHY_write(caller->mram, phyaddr, value);
 
-#if IODUMP
+#if PAGING_DBG
 	printf("Write to RAM successfully\n");
 #endif // IODUMP
 
@@ -603,7 +603,7 @@ int find_victim_page(struct mm_struct *mm, int *retpgn, int exception_page)
 		mm->fifo_using_pgn = mm->fifo_using_pgn->pg_next;
 	}
 	else{ // current return page number matches the exception
-		#if IODUMP
+		#if PAGING_DBG
 			printf("Matched exception page\n");
 		#endif
 		if (pgn_node->pg_next == NULL)	// cannot find another page
@@ -620,7 +620,7 @@ int find_victim_page(struct mm_struct *mm, int *retpgn, int exception_page)
 	}
 	
 
-	#if IODUMP
+	#if PAGING_DBG
 		printf("Found victim page\n");
 	#endif
 	free(pgn_node);
