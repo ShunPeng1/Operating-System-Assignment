@@ -154,6 +154,26 @@ int MEMPHY_format(struct memphy_struct *mp, int pagesz)
 	return 0;
 }
 
+/*
+ *  MEMPHY_deformat- delete format MEMPHY device
+ *  @mp: memphy struct
+ */
+int MEMPHY_deformat(struct memphy_struct *mp)
+{
+    struct framephy_struct *fst = mp->free_fp_list;
+    struct framephy_struct *temp;
+
+    while (fst != NULL)
+    {
+        temp = fst;
+        fst = fst->fp_next;
+        free(temp);
+    }
+
+    mp->free_fp_list = NULL;
+	return 0;
+}
+
 // Return the free frame number id in retfpn, from the head of free frame list and free it
 int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
 {
@@ -278,6 +298,20 @@ int init_memphy(struct memphy_struct *mp, int max_size, int randomflg)
 
 	if (!mp->rdmflg) /* Not Ramdom acess device, then it serial device*/
 		mp->cursor = 0;
+
+	return 0;
+}
+
+int delete_memphy(struct memphy_struct *mp, int max_size, int randomflg)
+{
+	free(mp->storage);
+	
+	//MEMPHY_deformat(mp);
+
+	pthread_mutex_destroy(&mp->lock_free_fp);
+	pthread_mutex_destroy(&mp->lock_used_fp);
+	pthread_mutex_destroy(&mp->lock);
+
 
 	return 0;
 }
