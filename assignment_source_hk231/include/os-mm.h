@@ -99,7 +99,7 @@ struct memphy_struct {
    /* Mutex lock for mutiple cpu access*/
    pthread_mutex_t lock_free_fp; // lock for free frame list
    pthread_mutex_t lock_used_fp; // lock for used frame list
-   pthread_mutex_t lock; // lock for storage
+   pthread_mutex_t lock_storage; // lock for storage
 };
 
 #endif
