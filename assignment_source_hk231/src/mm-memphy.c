@@ -149,6 +149,7 @@ int MEMPHY_format(struct memphy_struct *mp, int pagesz)
 	fst = malloc(sizeof(struct framephy_struct));
 	fst->fpn = iter;
 	mp->free_fp_list = fst;
+	mp->used_fp_list = NULL;
 
 	/* We have free frame list with first element, fill in the rest num-1 element member*/
 	for (iter = 1; iter < numfp; iter++)
@@ -238,8 +239,8 @@ int MEMPHY_dump(struct memphy_struct *mp)
 int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
 {
 	struct framephy_struct *newnode = malloc(sizeof(struct framephy_struct));
-	
 	pthread_mutex_lock(&mp->lock_free_fp);
+	
 	struct framephy_struct *fp = mp->free_fp_list;
 
 	/* Create new node with value fpn */
