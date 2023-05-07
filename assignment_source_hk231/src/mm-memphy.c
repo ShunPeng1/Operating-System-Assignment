@@ -242,6 +242,7 @@ int init_memphy(struct memphy_struct *mp, int max_size, int randomflg)
 
 	pthread_mutex_init(&mp->free_fp_lock, NULL);
 	pthread_mutex_init(&mp->used_fp_lock, NULL);
+	pthread_mutex_init(&mp->storage_lock, NULL);
 
 	mp->rdmflg = (randomflg != 0) ? 1 : 0;
 

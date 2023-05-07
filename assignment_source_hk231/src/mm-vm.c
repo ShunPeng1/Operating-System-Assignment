@@ -107,19 +107,19 @@ int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int 
 	/* TODO validate the planned memory area is not overlapped */
 
 	/*Thuan: return -1 if not overlap, return 0 if overlap*/
-	struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
+	// struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
 
-	int overlap = cur_vma->vm_start <= vmaend && vmastart <= cur_vma->vm_end; // as long as it overlap
+	// int overlap = cur_vma->vm_start <= vmaend && vmastart <= cur_vma->vm_end; // as long as it overlap
 	// int overlap = cur_vma->vm_start <= vmastart && vmaend  <= cur_vma->vm_end; // We need the new create sbrk to be in the start end
 
-	return overlap - 1;
+	return 0;
 }
 
 /*increase_vma_limit - increase vm area limits to reserve space for new variable, return -1 if fail
  *@caller: caller
  *@vmaid: ID vm area to alloc memory region
- *@inc_sz: increment byte size
- *
+ *@demand_size: additional byte size that we want the os allocate more for us
+ *@true_inc_size: the original increase size that we asked for
  */
 int increase_vma_limit(struct pcb_t *caller, int vmaid, int demand_size, int true_inc_size)
 {
