@@ -49,7 +49,6 @@ void enqueue(struct queue_t *q, struct pcb_t *proc)
     {
         q->proc[q->size] = proc;
         q->size++;
-        mlq->proc_count++;
     }
 }
 

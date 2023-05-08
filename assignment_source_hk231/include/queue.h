@@ -22,7 +22,7 @@ struct mlq_t {
 };
 #endif // MLQ_SCHED
 
-void enqueue(struct queue_t *q, struct pcb_t *proc, struct mlq_t *mlq);
+void enqueue(struct queue_t *q, struct pcb_t *proc);
 
 struct pcb_t * dequeue(struct queue_t * q);
 
