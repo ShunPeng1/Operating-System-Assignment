@@ -111,14 +111,15 @@ struct pcb_t * get_mlq_proc(void) {
 // enqueue a proc to mlq_queue base on it priority
 void put_mlq_proc(struct pcb_t * proc) {
 	pthread_mutex_lock(&queue_lock);
-	enqueue(&mlq_ready_queue.queues[proc->prio], proc, &mlq_ready_queue);
+	enqueue(&mlq_ready_queue.queues[proc->prio], proc);
+    mlq->proc_count++;
 	pthread_mutex_unlock(&queue_lock);
 }
 
 // enqueue a proc to mlq_queue base on it priority
 void add_mlq_proc(struct pcb_t * proc) {
 	pthread_mutex_lock(&queue_lock);
-	enqueue(&mlq_ready_queue.queues[proc->prio], proc, &mlq_ready_queue);
+	enqueue(&mlq_ready_queue.queues[proc->prio], proc);
 	pthread_mutex_unlock(&queue_lock);	
 }
 
