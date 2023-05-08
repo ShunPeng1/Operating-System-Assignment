@@ -55,7 +55,7 @@ void refill_slots_of_mlq(void)
 	mlq_ready_queue.slot_count = (MAX_PRIO * (MAX_PRIO + 1)) / 2;
 
 #if SCHED_DBG
-	printf("DEBUG: REFILL SLOT\n");
+	printf("SCHED_DBG: REFILL SLOT\n");
 #endif
 }
 

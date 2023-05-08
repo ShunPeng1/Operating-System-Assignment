@@ -43,17 +43,13 @@ Based on the document declare that maxSlot = max_prio - prio;
 */
 void enqueue(struct queue_t *q, struct pcb_t *proc)
 {
-    int maxSlot = MAX_QUEUE_SIZE;
-    if (q->size == maxSlot)
-    {
-        // Enlarge the queue array
-        maxSlot *= 2;
-        q->proc = realloc(q->proc, maxSlot * sizeof(struct pcb_t *));
-    }
     
-    // Add the new process to the queue
-    q->proc[q->size] = proc;
-    q->size++;
+    int maxSlot = MAX_QUEUE_SIZE;
+    if (q->size < maxSlot)
+    {
+        q->proc[q->size] = proc;
+        q->size++;
+    }
 }
 
 /* Thuan
