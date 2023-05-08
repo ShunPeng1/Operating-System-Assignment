@@ -47,6 +47,8 @@ void refill_slots_of_mlq(void)
 	{
 		mlq_ready_queue[i].slot = MAX_PRIO - i;
 	}
+
+	printf("DEBUG: REFILL SLOT\n");
 }
 
 struct pcb_t *get_proc_by_slot(){
