@@ -119,7 +119,8 @@ void put_mlq_proc(struct pcb_t * proc) {
 #if SYNC_SCHED
 	pthread_mutex_lock(&queue_lock);
 #endif // SYNC_SCHED
-	enqueue(&mlq_ready_queue.queues[proc->prio], proc, &mlq_ready_queue);
+	enqueue(&mlq_ready_queue.queues[proc->prio], proc);
+    mlq_ready_queue.proc_count++;
 #if SYNC_SCHED
 	pthread_mutex_unlock(&queue_lock);
 #endif // SYNC_SCHED
@@ -130,7 +131,8 @@ void add_mlq_proc(struct pcb_t * proc) {
 #if SYNC_SCHED
 	pthread_mutex_lock(&queue_lock);
 #endif // SYNC_SCHED
-	enqueue(&mlq_ready_queue.queues[proc->prio], proc, &mlq_ready_queue);
+	enqueue(&mlq_ready_queue.queues[proc->prio], proc);
+	mlq_ready_queue.proc_count++;
 #if SYNC_SCHED
 	pthread_mutex_unlock(&queue_lock);	
 #endif // SYNC_SCHED
