@@ -44,14 +44,14 @@ int MEMPHY_seq_read(struct memphy_struct *mp, int addr, BYTE *value)
 
 	if (!mp->rdmflg)
 		return -1; /* Not compatible mode for sequential read */
-
+#if SYNC_MM
 	pthread_mutex_lock(&mp->lock_storage);
-
+#endif // SYNC_MM
 	MEMPHY_move_cursor(mp, addr);
 	*value = (BYTE)mp->storage[addr];
-
+#if SYNC_MM
 	pthread_mutex_unlock(&mp->lock_storage);
-
+#endif // SYNC_MM
 	return 0;
 }
 
@@ -69,9 +69,13 @@ int MEMPHY_read(struct memphy_struct *mp, int addr, BYTE *value)
 
 	if (mp->rdmflg)
 	{
+#if SYNC_MM
 		pthread_mutex_lock(&mp->lock_storage);
+#endif // SYNC_MM
 		*value = mp->storage[addr];
+#if SYNC_MM
 		pthread_mutex_unlock(&mp->lock_storage);
+#endif // SYNC_MM
 	}
 	else /* Sequential access device */{
 		return MEMPHY_seq_read(mp, addr, value);
@@ -95,13 +99,14 @@ int MEMPHY_seq_write(struct memphy_struct *mp, int addr, BYTE value)
 
 	if (!mp->rdmflg)
 		return -1; /* Not compatible mode for sequential read */
-	
+#if SYNC_MM
 	pthread_mutex_lock(&mp->lock_storage);
-	
+#endif // SYNC_MM
 	MEMPHY_move_cursor(mp, addr);
 	mp->storage[addr] = value;
-
+#if SYNC_MM
 	pthread_mutex_unlock(&mp->lock_storage);
+#endif // SYNC_MM	
 	return 0;
 }
 
@@ -119,9 +124,13 @@ int MEMPHY_write(struct memphy_struct *mp, int addr, BYTE data)
 	
 	if (mp->rdmflg)
 	{
+#if SYNC_MM
 		pthread_mutex_lock(&mp->lock_storage);
+#endif // SYNC_MM
 		mp->storage[addr] = data;
+#if SYNC_MM
 		pthread_mutex_unlock(&mp->lock_storage);
+#endif // SYNC_MM
 	}
 	else /* Sequential access device */
 	{
@@ -187,11 +196,15 @@ int MEMPHY_deformat(struct memphy_struct *mp)
 // Return the free frame number id in retfpn, from the head of free frame list and free it
 int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
 {
+#if SYNC_MM
 	pthread_mutex_lock(&mp->lock_free_fp);
+#endif // SYNC_MM
 	struct framephy_struct *fp = mp->free_fp_list;
 
 	if (fp == NULL){
+#if SYNC_MM
 		pthread_mutex_unlock(&mp->lock_free_fp);
+#endif // SYNC_MM
 		return -1;
 	}
 
@@ -201,8 +214,9 @@ int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
 	/* MEMPHY is iteratively used up until its exhausted
 	 * No garbage collector acting then it not been released
 	 */
+#if SYNC_MM
 	pthread_mutex_unlock(&mp->lock_free_fp);
-
+#endif // SYNC_MM
 	free(fp);
 	return 0;
 }
@@ -212,8 +226,9 @@ int MEMPHY_dump(struct memphy_struct *mp)
 	/*TODO dump memphy contnt mp->storage
 	 *     for tracing the memory content
 	 */
-
+#if SYNC_MM
 	pthread_mutex_lock(&mp->lock_used_fp);
+#endif // SYNC_MM
 
 	struct framephy_struct* used_framed = mp->used_fp_list;
 	while (used_framed)
@@ -221,9 +236,10 @@ int MEMPHY_dump(struct memphy_struct *mp)
 		printf("Used frame page number %d\n", used_framed->fpn);
 		used_framed = used_framed->fp_next;
 	}
+#if SYNC_MM
 	pthread_mutex_unlock(&mp->lock_used_fp);
-
 	pthread_mutex_lock(&mp->lock_storage);
+#endif // SYNC_MM
 	for (int byte_idx = 0; byte_idx < mp->maxsz; byte_idx++)
 	{
 		if (mp->storage[byte_idx] != 0)
@@ -231,7 +247,9 @@ int MEMPHY_dump(struct memphy_struct *mp)
 			printf("Offset %d: %d\n", byte_idx, mp->storage[byte_idx]);
 		}
 	}
+#if SYNC_MM
 	pthread_mutex_unlock(&mp->lock_storage);
+#endif // SYNC_MM	
 	return 0;
 }
 
@@ -239,36 +257,44 @@ int MEMPHY_dump(struct memphy_struct *mp)
 int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
 {
 	struct framephy_struct *newnode = malloc(sizeof(struct framephy_struct));
+#if SYNC_MM
 	pthread_mutex_lock(&mp->lock_free_fp);
-	
+#endif // SYNC_MM
 	struct framephy_struct *fp = mp->free_fp_list;
 
 	/* Create new node with value fpn */
 	newnode->fpn = fpn;
 	newnode->fp_next = fp;
 	mp->free_fp_list = newnode;
-
+#if SYNC_MM
 	pthread_mutex_unlock(&mp->lock_free_fp);
+#endif // SYNC_MM
 	return 0;
 }
 
 int MEMPHY_clean_frame(struct memphy_struct *mp, int fpn)
 {
+#if SYNC_MM
 	pthread_mutex_lock(&mp->lock_storage);
+#endif // SYNC_MM	
 	memset(mp->storage + fpn * PAGING_PAGESZ, 0, PAGING_PAGESZ);
+#if SYNC_MM
 	pthread_mutex_unlock(&mp->lock_storage);
+#endif // SYNC_MM
 	return 0;
 }
 
 // Concat a frame linked list to used frame list
 int MEMPHY_concat_usedfp(struct memphy_struct *mp, struct framephy_struct *start_node)
 {
+#if SYNC_MM
 	pthread_mutex_lock(&mp->lock_used_fp);
-
+#endif // SYNC_MM
 	if (mp == NULL || start_node == NULL)
 	{
+#if SYNC_MM
 		pthread_mutex_unlock(&mp->lock_used_fp);
-
+#endif // SYNC_MM
 		return -1;
 	}
 
@@ -288,9 +314,9 @@ int MEMPHY_concat_usedfp(struct memphy_struct *mp, struct framephy_struct *start
 	{
 		last_node->fp_next = start_node;
 	}
-
+#if SYNC_MM
 	pthread_mutex_unlock(&mp->lock_used_fp);
-
+#endif // SYNC_MM
 	return 0;
 }
 
@@ -303,11 +329,11 @@ int init_memphy(struct memphy_struct *mp, int max_size, int randomflg)
 	mp->maxsz = max_size;
 
 	MEMPHY_format(mp, PAGING_PAGESZ);
-
+#if SYNC_MM
 	pthread_mutex_init(&mp->lock_free_fp, NULL);
 	pthread_mutex_init(&mp->lock_used_fp, NULL);
 	pthread_mutex_init(&mp->lock_storage, NULL);
-
+#endif // SYNC_MM
 	mp->rdmflg = (randomflg != 0) ? 1 : 0;
 
 	if (!mp->rdmflg) /* Not Ramdom acess device, then it serial device*/
@@ -321,11 +347,11 @@ int delete_memphy(struct memphy_struct *mp, int max_size, int randomflg)
 	free(mp->storage);
 	
 	//MEMPHY_deformat(mp);
-
+#if SYNC_MM
 	pthread_mutex_destroy(&mp->lock_free_fp);
 	pthread_mutex_destroy(&mp->lock_used_fp);
 	pthread_mutex_destroy(&mp->lock_storage);
-
+#endif // SYNC_MM
 
 	return 0;
 }

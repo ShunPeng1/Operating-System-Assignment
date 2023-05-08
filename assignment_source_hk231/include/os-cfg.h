@@ -5,6 +5,8 @@
 #define MAX_PRIO 140
 
 #define MM_PAGING
+#define SYNC_SCHED 1
+#define SYNC_MM 1
 
 // #define MM_FIXED_MEMSZ
 #define SCHED_DBG 1

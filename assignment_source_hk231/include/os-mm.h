@@ -97,9 +97,11 @@ struct memphy_struct {
    struct framephy_struct *used_fp_list; // used frame linked list
 
    /* Mutex lock for mutiple cpu access*/
+#if SYNC_MM
    pthread_mutex_t lock_free_fp; // lock for free frame list
    pthread_mutex_t lock_used_fp; // lock for used frame list
    pthread_mutex_t lock_storage; // lock for storage
+#endif // SYNC_SCHED
 };
 
 #endif
