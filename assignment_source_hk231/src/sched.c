@@ -10,16 +10,13 @@ static struct queue_t run_queue;
 static pthread_mutex_t queue_lock;
 
 #ifdef MLQ_SCHED
-static struct queue_t mlq_ready_queue[MAX_PRIO];
+static struct mlq_t mlq_ready_queue;
 #endif
 
 // return 0 as long as there is 1 pcb, return 1 when it is empty
 int queue_empty(void) {
 #ifdef MLQ_SCHED
-	unsigned long prio;
-	for (prio = 0; prio < MAX_PRIO; prio++)
-		if(!empty(&mlq_ready_queue[prio])) 
-			return 0; 
+	return (mlq_ready_queue.proc_count == 0);
 #endif
 	return (empty(&ready_queue) && empty(&run_queue));
 }
@@ -27,12 +24,16 @@ int queue_empty(void) {
 void init_scheduler(void) {
 #ifdef MLQ_SCHED
     int i ;
+	mlq_ready_queue.slot_count = 0;
 
 	for (i = 0; i < MAX_PRIO; i ++)
 	{
-		mlq_ready_queue[i].size = 0;
-		mlq_ready_queue[i].slot = MAX_PRIO - i;
+		mlq_ready_queue.queues[i].size = 0;
+		mlq_ready_queue.queues[i].slot = MAX_PRIO - i;
+		mlq_ready_queue.slot_count += mlq_ready_queue.queues[i].slot;
 	}
+
+	mlq_ready_queue.proc_count = 0;
 #endif
 	ready_queue.size = 0;
 	run_queue.size = 0;
@@ -45,19 +46,25 @@ void refill_slots_of_mlq(void)
 {
 	for (int i = 0; i < MAX_PRIO; i++)
 	{
-		mlq_ready_queue[i].slot = MAX_PRIO - i;
+		mlq_ready_queue.queues[i].slot = MAX_PRIO - i;
 	}
 
+#if SCHED_DBG
 	printf("DEBUG: REFILL SLOT\n");
+#endif
 }
 
 struct pcb_t *get_proc_by_slot(){
+	if (mlq_ready_queue.proc_count == 0)
+	{
+		return NULL;
+	}
 	for(int i = 0 ; i < MAX_PRIO; i++){
-			if( !empty(&mlq_ready_queue[i]) && (mlq_ready_queue[i].slot > 0) ) {
-				mlq_ready_queue[i].slot--;
-				return dequeue(&mlq_ready_queue[i]);
-			}
+		if( !empty(&mlq_ready_queue.queues[i]) && (mlq_ready_queue.queues[i].slot > 0) ) {
+			mlq_ready_queue.queues[i].slot--;
+			return dequeue(&mlq_ready_queue.queues[i]);
 		}
+	}
 	return NULL;
 }
 
@@ -80,13 +87,22 @@ struct pcb_t * get_mlq_proc(void) {
 	pthread_mutex_lock(&queue_lock);
 
 	if(!queue_empty()) {
-		proc = get_proc_by_slot();
+		for(int i = 0 ; i < MAX_PRIO; i++){
+			if( !empty(&mlq_ready_queue.queues[i]) && (mlq_ready_queue.queues[i].slot > 0) ) {
+				proc = dequeue(&mlq_ready_queue.queues[i]);
+				
+				mlq_ready_queue.queues[i].slot--;
+				mlq_ready_queue.slot_count--;
+				mlq_ready_queue.proc_count--;
+				
+				if (mlq_ready_queue.proc_count == 0 || mlq_ready_queue.slot_count == 0)
+				{
+					refill_slots_of_mlq();
+				}
+				break;
+			}
+		}
 	}
-	if(proc == NULL){
-		refill_slots_of_mlq();
-		proc = get_proc_by_slot();
-	}
-
 	pthread_mutex_unlock(&queue_lock);
 	return proc;	
 }
@@ -94,14 +110,14 @@ struct pcb_t * get_mlq_proc(void) {
 // enqueue a proc to mlq_queue base on it priority
 void put_mlq_proc(struct pcb_t * proc) {
 	pthread_mutex_lock(&queue_lock);
-	enqueue(&mlq_ready_queue[proc->prio], proc);
+	enqueue(&mlq_ready_queue.queues[proc->prio], proc, &mlq_ready_queue);
 	pthread_mutex_unlock(&queue_lock);
 }
 
 // enqueue a proc to mlq_queue base on it priority
 void add_mlq_proc(struct pcb_t * proc) {
 	pthread_mutex_lock(&queue_lock);
-	enqueue(&mlq_ready_queue[proc->prio], proc);
+	enqueue(&mlq_ready_queue.queues[proc->prio], proc, &mlq_ready_queue);
 	pthread_mutex_unlock(&queue_lock);	
 }
 

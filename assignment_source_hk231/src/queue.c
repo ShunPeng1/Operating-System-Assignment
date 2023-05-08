@@ -41,7 +41,7 @@ void sortQueue(struct queue_t *q)
 Put the proc into the queue, the queue is an array so we add at size-1, then size++
 Based on the document declare that maxSlot = max_prio - prio;
 */
-void enqueue(struct queue_t *q, struct pcb_t *proc)
+void enqueue(struct queue_t *q, struct pcb_t *proc, struct mlq_t *mlq)
 {
     /* TODO: put a new process to queue [q] */
 
@@ -50,6 +50,7 @@ void enqueue(struct queue_t *q, struct pcb_t *proc)
     {
         q->proc[q->size] = proc;
         q->size++;
+        mlq->proc_count++;
         //printf("Debug: Enqueue %d - %d\n", proc->pid, proc->prio);
     }
     //sortQueue(q);

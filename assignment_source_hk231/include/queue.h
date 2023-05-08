@@ -14,7 +14,15 @@ struct queue_t {
 #endif
 };
 
-void enqueue(struct queue_t * q, struct pcb_t * proc);
+#ifdef MLQ_SCHED
+struct mlq_t {
+	struct queue_t queues[MAX_PRIO];
+	int proc_count;
+	int slot_count;
+};
+#endif // MLQ_SCHED
+
+void enqueue(struct queue_t *q, struct pcb_t *proc, struct mlq_t *mlq);
 
 struct pcb_t * dequeue(struct queue_t * q);
 
