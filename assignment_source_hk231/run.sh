@@ -4,7 +4,9 @@ make all
 # ./os 
 # ./os custom2
 # ./os custom3
-./os os_1_singleCPU_mlq_paging
+# ./os os_1_singleCPU_mlq_paging
 # ./os os_0_mlq_paging
 # ./os custom_mlq_0
+# ./os custom_mlq_1
 # ./os custom
+./os custom_err

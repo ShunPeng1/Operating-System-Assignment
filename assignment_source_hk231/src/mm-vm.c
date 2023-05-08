@@ -23,7 +23,28 @@ int pgalloc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 	int addr;
 
 	/* By default using vmaid = 0 */
+#if PAGING_ERR_DUMP
+	int alloc_status = __alloc(proc, 0, reg_index, size, &addr);
+	if (alloc_status == ERR_AREA_OVERLAP)
+	{
+		printf("ShopeeOS error: VMAs overlapped, cannot allocate!\n");
+	}
+	else if (alloc_status == ERR_LACK_MEM_RAM)
+	{
+		printf("ShopeeOS error: new region is too large to fit all in RAM, cannot allocate!\n");
+	}
+	else if (alloc_status == ERR_LACK_MEM_SWP)
+	{
+		printf("ShopeeOS error: ran out of SWAP memory, cannot allocate!\n");
+	}
+	else if (alloc_status != 0)
+	{
+		printf("ShopeeOS error: undefined error, cannot allocate!\n");
+	}
+	return alloc_status;
+#else
 	return __alloc(proc, 0, reg_index, size, &addr);
+#endif
 }
 
 /*__alloc - allocate a region memory
@@ -74,8 +95,9 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 	int demand_size = cur_vma->sbrk + size - cur_vma->vm_end; // 0 + 300 - 0 ; 300 + 100 - 512
 
 	/* TODO INCREASE THE LIMIT */
-	if (increase_vma_limit(caller, vmaid, demand_size, size) < 0)
-		return -1;
+	int increase_status = increase_vma_limit(caller, vmaid, demand_size, size);
+	if (increase_status < 0)
+		return increase_status;
 
 	/*Successful increase limit */
 	caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
@@ -132,14 +154,16 @@ int increase_vma_limit(struct pcb_t *caller, int vmaid, int demand_size, int tru
 	int old_end = cur_vma->vm_end;
 
 	/*Validate overlap of obtained region */
-	if (validate_overlap_vm_area(caller, vmaid, next_area->rg_start, next_area->rg_end) < 0) // this check if the new region [sbrk , sbrk + inc_sz] is in [start, end], return -1 if not (meaning sbrk is more than end)
-		return -1;																			 /*Overlap and failed allocation */
+	int overlap_status = validate_overlap_vm_area(caller, vmaid, next_area->rg_start, next_area->rg_end);
+	if (overlap_status < 0) // this check if the new region [sbrk , sbrk + inc_sz] is in [start, end], return -1 if not (meaning sbrk is more than end)
+		return overlap_status;																			 /*Overlap and failed allocation */
 
 	/* The obtained vm area (only)
 	 * now will be alloc real ram region */
-	if (vm_map_ram(caller, next_area->rg_start, next_area->rg_end,	 // Notice that there is the TODO in mm.c vmap_page_range() in this code
-				   old_end, num_of_pages_increased, new_region) < 0) /* Map the memory to MEMRAM */
-		return -1;
+	int map_ram_status = vm_map_ram(caller, next_area->rg_start, next_area->rg_end,
+				   					old_end, num_of_pages_increased, new_region);
+	if (map_ram_status < 0) /* Map the memory to MEMRAM */
+		return map_ram_status;
 
 	return 0;
 }
@@ -357,7 +381,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 
 	if (pte == 0)
 	{
-		return -1;
+		return ERR_INVALID_ACCESS;
 	}
 
 	if (!PAGING_PAGE_PRESENT(pte))
@@ -372,7 +396,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 		/* Find victim page */
 		if (find_victim_page(caller->mm, &vicpgn, -1) != 0)
 		{
-			return -1;
+			return ERR_FIND_VICT_PAGE;
 		}
 		uint32_t victim_pte = caller->mm->pgd[vicpgn];
 		int victim_fpn = PAGING_FPN(victim_pte);
@@ -425,8 +449,9 @@ int pg_getval(struct mm_struct *mm, int addr, BYTE *data, struct pcb_t *caller)
 	int fpn;
 
 	/* Get the page to MEMRAM, swap from MEMSWAP if needed */
-	if (pg_getpage(mm, pgn, &fpn, caller) != 0)
-		return -1; /* invalid page access */
+	int getpage_status = pg_getpage(mm, pgn, &fpn, caller);
+	if (getpage_status != 0)
+		return getpage_status; /* invalid page access */
 
 	int phyaddr = (fpn * PAGING_PAGESZ) + off;
 
@@ -452,8 +477,9 @@ int pg_setval(struct mm_struct *mm, int addr, BYTE value, struct pcb_t *caller)
 	int fpn;
 
 	/* Get the page to MEMRAM, swap from MEMSWAP if needed */
-	if (pg_getpage(mm, pgn, &fpn, caller) != 0)
-		return -1; /* invalid page access */
+	int getpage_status = pg_getpage(mm, pgn, &fpn, caller);
+	if (getpage_status != 0)
+		return getpage_status; /* invalid page access */
 
 	int phyaddr = (fpn * PAGING_PAGESZ) + off;
 
@@ -483,9 +509,7 @@ int __read(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE *data)
 	if (currg == NULL || cur_vma == NULL) /* Invalid memory identify */
 		return -1;
 
-	pg_getval(caller->mm, currg->rg_start + offset, data, caller);
-
-	return 0;
+	return pg_getval(caller->mm, currg->rg_start + offset, data, caller);;
 }
 
 /*pgwrite - PAGING-based read a region memory */
@@ -496,7 +520,7 @@ int pgread(
 	uint32_t destination)
 {
 	BYTE data;
-	int val = __read(proc, 0, source, offset, &data);
+	int read_status = __read(proc, 0, source, offset, &data);
 
 	destination = (uint32_t)data;
 #if IODUMP
@@ -507,7 +531,22 @@ int pgread(
 	MEMPHY_dump(proc->mram);
 #endif // IODUMP
 
-	return val;
+#if PAGING_ERR_DUMP
+	if (read_status == ERR_INVALID_ACCESS)
+	{
+		printf("ShopeeOS error: accessed invalid memory region, cannot read!\n");
+	}
+	else if (read_status == ERR_FIND_VICT_PAGE)
+	{
+		printf("ShopeeOS error: cannot bring required memory region from SWAP to RAM, cannot read!\n");
+	}
+	else if (read_status != 0)
+	{
+		printf("ShopeeOS error: undefined error, cannot read!\n");
+	}
+#endif
+
+	return read_status;
 }
 
 /*__write - write a region memory
@@ -527,9 +566,7 @@ int __write(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE value)
 	if (currg == NULL || cur_vma == NULL) /* Invalid memory identify */
 		return -1;
 
-	pg_setval(caller->mm, currg->rg_start + offset, value, caller);
-
-	return 0;
+	return pg_setval(caller->mm, currg->rg_start + offset, value, caller);;
 }
 
 /*pgwrite - PAGING-based write a region memory */
@@ -546,8 +583,24 @@ int pgwrite(
 #endif
 	MEMPHY_dump(proc->mram);
 #endif
+	int write_status = __write(proc, 0, destination, offset, data);
 
-	return __write(proc, 0, destination, offset, data);
+#if PAGING_ERR_DUMP
+	if (write_status == ERR_INVALID_ACCESS)
+	{
+		printf("ShopeeOS error: accessed invalid memory region, cannot write!\n");
+	}
+	else if (write_status == ERR_FIND_VICT_PAGE)
+	{
+		printf("ShopeeOS error: cannot bring required memory region from SWAP to RAM, cannot write!\n");
+	}
+	else if (write_status != 0)
+	{
+		printf("ShopeeOS error: undefined error, cannot write!\n");
+	}
+#endif
+
+	return write_status;
 }
 
 // Thuan: TODO : Implement this somewhere

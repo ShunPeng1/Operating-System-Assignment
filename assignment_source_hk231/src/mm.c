@@ -159,13 +159,14 @@ int alloc_pages_range(struct pcb_t *caller , int req_pgnum, struct framephy_stru
 			int vicpgn, swp_fpn;
 			if (find_victim_page(caller->mm, &vicpgn, exception_page) != 0) // TODO what if there is not enough victim page in the loop? Ex: 3 frame in ram but alloc 1000 frame?
 			{
-				return -3000;
+				return ERR_LACK_MEM_RAM;
 			}
 			uint32_t victim_pte = caller->mm->pgd[vicpgn];
 			int victim_fpn = PAGING_FPN(victim_pte);
 
 			/* Get free frame in MEMSWP */
-			if(MEMPHY_get_freefp(caller->active_mswp, &swp_fpn) != 0) return -3000;  // ERROR CODE of obtaining somes but not enough frames
+			if(MEMPHY_get_freefp(caller->active_mswp, &swp_fpn) != 0)
+				return ERR_LACK_MEM_SWP;  // ERROR CODE of obtaining somes but not enough frames
 
 			/* Do swap frame from MEMRAM to MEMSWP and vice versa*/
 			/* Copy victim frame to swap */
@@ -176,9 +177,9 @@ int alloc_pages_range(struct pcb_t *caller , int req_pgnum, struct framephy_stru
 			/* Update the victim page entry to SWAPPED */
 			pte_set_swap(&caller->mm->pgd[vicpgn], SWPTYP, swp_fpn);
 
-			#if IODUMP
-				printf("Moved frame RAM %d to frame SWAP %d while alloc\n", vicpgn, swp_fpn);
-			#endif
+#if PAGING_DBG
+			printf("Moved frame RAM %d to frame SWAP %d while alloc\n", vicpgn, swp_fpn);
+#endif
 			
 			/* Thuan: Create new node with value fpn, then assign the new node become head of frm_lst */
 			struct framephy_struct *new_node = malloc(sizeof(struct framephy_struct));
@@ -217,17 +218,8 @@ int vm_map_ram(struct pcb_t *caller, int astart, int aend, int mapstart, int inc
 	 */
 	num_increase_alloc_page_by_mram = alloc_pages_range(caller, increase_page_number, &mram_free_frame_list, PAGING_PGN(astart));
 	//printf("DEBUG: alloc_pages_range\n");
-	if (num_increase_alloc_page_by_mram < 0 && num_increase_alloc_page_by_mram != -3000)
-		return -1;
-
-	/* Out of memory */
-	if (num_increase_alloc_page_by_mram == -3000) 
-	{
-#ifdef MMDBG
-		printf("OOM: vm_map_ram out of memory \n");
-#endif
-		return -1;
-	}
+	if (num_increase_alloc_page_by_mram < 0)
+		return num_increase_alloc_page_by_mram;	// Error code returned
 	
 	vmap_page_range(caller, mapstart, num_increase_alloc_page_by_mram, mram_free_frame_list, ret_rg); // Add the free page and frame to the page table
 	//printf("DEBUG: vmap_page_range\n");

@@ -17,5 +17,6 @@
 #define PAGETBL_DUMP 1
 
 #define PAGING_DBG 1
+#define PAGING_ERR_DUMP 1
 
 #endif
