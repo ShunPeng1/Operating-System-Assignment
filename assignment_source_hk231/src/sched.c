@@ -51,7 +51,7 @@ void refill_slots_of_mlq(void)
 	mlq_ready_queue.slot_count = (MAX_PRIO * (MAX_PRIO + 1)) / 2;
 
 #if SCHED_DBG
-	printf("DEBUG: REFILL SLOT\n");
+	printf("SCHED_DBG: REFILL SLOT\n");
 #endif
 }
 
@@ -112,7 +112,7 @@ struct pcb_t * get_mlq_proc(void) {
 void put_mlq_proc(struct pcb_t * proc) {
 	pthread_mutex_lock(&queue_lock);
 	enqueue(&mlq_ready_queue.queues[proc->prio], proc);
-    mlq_ready_queue->proc_count++;
+	mlq_ready_queue->proc_count++;
 	pthread_mutex_unlock(&queue_lock);
 }
 
