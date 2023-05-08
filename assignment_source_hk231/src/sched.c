@@ -7,7 +7,9 @@
 #include <stdio.h>
 static struct queue_t ready_queue;
 static struct queue_t run_queue;
+#if SYNC_SCHED
 static pthread_mutex_t queue_lock;
+#endif // SYNC_SCHED
 
 #ifdef MLQ_SCHED
 static struct mlq_t mlq_ready_queue;
@@ -36,7 +38,9 @@ void init_scheduler(void) {
 #endif
 	ready_queue.size = 0;
 	run_queue.size = 0;
+#if SYNC_SCHED
 	pthread_mutex_init(&queue_lock, NULL);
+#endif // SYNC_SCHED
 }
 
 #ifdef MLQ_SCHED
@@ -84,9 +88,9 @@ struct pcb_t * get_mlq_proc(void) {
 	/* Thuan
 	return NULL when queue is empty, find the highest priority non-empty queue and dequeue
 	*/
-	
+#if SYNC_SCHED
 	pthread_mutex_lock(&queue_lock);
-
+#endif // SYNC_SCHED
 	if(!queue_empty()) {
 		for(int i = 0 ; i < MAX_PRIO; i++){
 			if( !empty(&mlq_ready_queue.queues[i]) && (mlq_ready_queue.queues[i].slot > 0) ) {
@@ -104,24 +108,34 @@ struct pcb_t * get_mlq_proc(void) {
 			}
 		}
 	}
+#if SYNC_SCHED
 	pthread_mutex_unlock(&queue_lock);
+#endif // SYNC_SCHED	
 	return proc;	
 }
 
 // enqueue a proc to mlq_queue base on it priority
 void put_mlq_proc(struct pcb_t * proc) {
+#if SYNC_SCHED
 	pthread_mutex_lock(&queue_lock);
+#endif // SYNC_SCHED
 	enqueue(&mlq_ready_queue.queues[proc->prio], proc);
-	mlq_ready_queue.proc_count++;
+    mlq_ready_queue.proc_count++;
+#if SYNC_SCHED
 	pthread_mutex_unlock(&queue_lock);
+#endif // SYNC_SCHED
 }
 
 // enqueue a proc to mlq_queue base on it priority
 void add_mlq_proc(struct pcb_t * proc) {
+#if SYNC_SCHED
 	pthread_mutex_lock(&queue_lock);
+#endif // SYNC_SCHED
 	enqueue(&mlq_ready_queue.queues[proc->prio], proc);
 	mlq_ready_queue.proc_count++;
+#if SYNC_SCHED
 	pthread_mutex_unlock(&queue_lock);	
+#endif // SYNC_SCHED
 }
 
 struct pcb_t * get_proc(void) {
@@ -145,15 +159,23 @@ struct pcb_t * get_proc(void) {
 }
 
 void put_proc(struct pcb_t * proc) {
+#if SYNC_SCHED
 	pthread_mutex_lock(&queue_lock);
+#endif // SYNC_SCHED
 	enqueue(&run_queue, proc);
+#if SYNC_SCHED
 	pthread_mutex_unlock(&queue_lock);
+#endif // SYNC_SCHED
 }
 
 void add_proc(struct pcb_t * proc) {
+#if SYNC_SCHED
 	pthread_mutex_lock(&queue_lock);
+#endif // SYNC_SCHED
 	enqueue(&ready_queue, proc);
+#if SYNC_SCHED
 	pthread_mutex_unlock(&queue_lock);	
+#endif // SYNC_SCHED
 }
 #endif
 
