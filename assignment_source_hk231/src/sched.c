@@ -24,15 +24,14 @@ int queue_empty(void) {
 void init_scheduler(void) {
 #ifdef MLQ_SCHED
     int i ;
-	mlq_ready_queue.slot_count = 0;
 
 	for (i = 0; i < MAX_PRIO; i ++)
 	{
 		mlq_ready_queue.queues[i].size = 0;
 		mlq_ready_queue.queues[i].slot = MAX_PRIO - i;
-		mlq_ready_queue.slot_count += mlq_ready_queue.queues[i].slot;
 	}
 
+	mlq_ready_queue.slot_count = (MAX_PRIO * (MAX_PRIO + 1)) / 2;
 	mlq_ready_queue.proc_count = 0;
 #endif
 	ready_queue.size = 0;
@@ -48,6 +47,8 @@ void refill_slots_of_mlq(void)
 	{
 		mlq_ready_queue.queues[i].slot = MAX_PRIO - i;
 	}
+
+	mlq_ready_queue.slot_count = (MAX_PRIO * (MAX_PRIO + 1)) / 2;
 
 #if SCHED_DBG
 	printf("DEBUG: REFILL SLOT\n");
