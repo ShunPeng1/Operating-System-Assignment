@@ -320,6 +320,25 @@ int MEMPHY_concat_usedfp(struct memphy_struct *mp, struct framephy_struct *start
 	return 0;
 }
 
+int MEMPHY_count_available_frame(struct memphy_struct * mp)
+{
+	int count = 0;
+#if SYNC_MM
+	pthread_mutex_lock(&mp->lock_free_fp);
+#endif // SYNC_MM
+	struct framephy_struct * roamer = mp->free_fp_list;
+	while (roamer)
+	{
+		count++;
+		roamer = roamer->fp_next;
+	}
+#if SYNC_MM
+	pthread_mutex_unlock(&mp->lock_free_fp);
+#endif // SYNC_MM
+
+	return count;
+}
+
 /*
  *  Init MEMPHY struct
  */

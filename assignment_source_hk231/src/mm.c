@@ -135,6 +135,23 @@ int alloc_pages_range(struct pcb_t *caller , int req_pgnum, struct framephy_stru
 {
 	int pgit, mram_fpn;
 
+	int ram_free_fpn_count = MEMPHY_count_available_frame(caller->mram);
+	int victim_count = count_available_victim(caller->mm, exception_page);
+	int swp_free_fpn_count = MEMPHY_count_available_frame(caller->active_mswp);
+
+	if (req_pgnum > ram_free_fpn_count)	// Need to swap something
+	{
+		int swap_frame_count = req_pgnum - ram_free_fpn_count;
+		if (swap_frame_count > victim_count)	// RAM cannot fit all
+		{
+			return ERR_LACK_MEM_RAM;
+		}
+		else if (swap_frame_count > swp_free_fpn_count)	// SWAP cannot fit all
+		{
+			return ERR_LACK_MEM_SWP;
+		}
+	}
+
 	for(pgit = 0; pgit < req_pgnum; pgit++)
 	{
 		if(MEMPHY_get_freefp(caller->mram, &mram_fpn) == 0) // Successfully Get the free frame number id in fpn
