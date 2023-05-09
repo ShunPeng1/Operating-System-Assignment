@@ -320,7 +320,7 @@ int MEMPHY_concat_usedfp(struct memphy_struct *mp, struct framephy_struct *start
 	return 0;
 }
 
-int MEMPHY_count_available_frame(struct memphy_struct * mp)
+int MEMPHY_count_available_frame(struct memphy_struct * mp, int required_num_pages)
 {
 	int count = 0;
 #if SYNC_MM
@@ -331,6 +331,8 @@ int MEMPHY_count_available_frame(struct memphy_struct * mp)
 	{
 		count++;
 		roamer = roamer->fp_next;
+		if (count >= required_num_pages)
+			break;
 	}
 #if SYNC_MM
 	pthread_mutex_unlock(&mp->lock_free_fp);
