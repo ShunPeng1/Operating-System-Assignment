@@ -24,22 +24,24 @@ int pgalloc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 
 	/* By default using vmaid = 0 */
 #if PAGING_ERR_DUMP
+	int pid = proc->pid;
+	int line = proc->pc + 1;
 	int alloc_status = __alloc(proc, 0, reg_index, size, &addr);
 	if (alloc_status == ERR_AREA_OVERLAP)
 	{
-		printf("ShopeeOS error: VMAs overlapped, cannot allocate!\n");
+		printf("** ShopeeOS ERROR ** in PID: %d, at line: %d:\n ===> what: VMAs overlapped, cannot allocate!\n", pid, line);
 	}
 	else if (alloc_status == ERR_LACK_MEM_RAM)
 	{
-		printf("ShopeeOS error: new region is too large to fit all in RAM, cannot allocate!\n");
+		printf("** ShopeeOS ERROR ** in PID: %d, at line: %d:\n ===> what: new region is too large to fit all in RAM, cannot allocate!\n", pid, line);
 	}
 	else if (alloc_status == ERR_LACK_MEM_SWP)
 	{
-		printf("ShopeeOS error: ran out of SWAP memory, cannot allocate!\n");
+		printf("** ShopeeOS ERROR ** in PID: %d, at line: %d:\n ===> what: ran out of SWAP memory, cannot allocate!\n", pid, line);
 	}
 	else if (alloc_status != 0)
 	{
-		printf("ShopeeOS error: undefined error, cannot allocate!\n");
+		printf("** ShopeeOS ERROR ** in PID: %d, at line: %d:\n ===> what: undefined error, cannot allocate!\n", pid, line);
 	}
 	return alloc_status;
 #else
@@ -545,17 +547,19 @@ int pgread(
 #endif // IODUMP
 
 #if PAGING_ERR_DUMP
+	int pid = proc->pid;
+	int line = proc->pc + 1;
 	if (read_status == ERR_INVALID_ACCESS)
 	{
-		printf("ShopeeOS error: accessed invalid memory region, cannot read!\n");
+		printf("** ShopeeOS ERROR ** in PID: %d, at line: %d:\n ===> what: accessed invalid memory region, cannot read!\n", pid, line);
 	}
 	else if (read_status == ERR_SWAPPING)
 	{
-		printf("ShopeeOS error: cannot bring required memory region from SWAP to RAM, cannot read!\n");
+		printf("** ShopeeOS ERROR ** in PID: %d, at line: %d:\n ===> what: cannot bring required memory region from SWAP to RAM, cannot read!\n", pid, line);
 	}
 	else if (read_status != 0)
 	{
-		printf("ShopeeOS error: undefined error, cannot read!\n");
+		printf("** ShopeeOS ERROR ** in PID: %d, at line: %d:\n ===> what: undefined error, cannot read!\n", pid, line);
 	}
 #endif
 
@@ -603,17 +607,19 @@ int pgwrite(
 	int write_status = __write(proc, 0, destination, offset, data);
 
 #if PAGING_ERR_DUMP
+	int pid = proc->pid;
+	int line = proc->pc + 1;
 	if (write_status == ERR_INVALID_ACCESS)
 	{
-		printf("ShopeeOS error: accessed invalid memory region, cannot write!\n");
+		printf("** ShopeeOS ERROR ** in PID: %d, at line: %d:\n ===> what: accessed invalid memory region, cannot write!\n", pid, line);
 	}
 	else if (write_status == ERR_SWAPPING)
 	{
-		printf("ShopeeOS error: cannot bring required memory region from SWAP to RAM, cannot write!\n");
+		printf("** ShopeeOS ERROR ** in PID: %d, at line: %d:\n ===> what: cannot bring required memory region from SWAP to RAM, cannot write!\n", pid, line);
 	}
 	else if (write_status != 0)
 	{
-		printf("ShopeeOS error: undefined error, cannot write!\n");
+		printf("** ShopeeOS ERROR ** in PID: %d, at line: %d:\n ===> what: undefined error, cannot write!\n", pid, line);
 	}
 #endif
 
