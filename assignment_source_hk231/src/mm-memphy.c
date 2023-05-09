@@ -159,6 +159,9 @@ int MEMPHY_format(struct memphy_struct *mp, int pagesz)
 	fst->fpn = iter;
 	mp->free_fp_list = fst;
 	mp->used_fp_list = NULL;
+	
+	mp->num_of_free_frame = numfp;
+	mp->num_of_used_frame = 0;
 
 	/* We have free frame list with first element, fill in the rest num-1 element member*/
 	for (iter = 1; iter < numfp; iter++)
@@ -210,7 +213,7 @@ int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
 
 	*retfpn = fp->fpn;
 	mp->free_fp_list = fp->fp_next;
-
+	mp->num_of_free_frame--;
 	/* MEMPHY is iteratively used up until its exhausted
 	 * No garbage collector acting then it not been released
 	 */
@@ -266,6 +269,8 @@ int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
 	newnode->fpn = fpn;
 	newnode->fp_next = fp;
 	mp->free_fp_list = newnode;
+
+	mp->num_of_free_frame++;
 #if SYNC_MM
 	pthread_mutex_unlock(&mp->lock_free_fp);
 #endif // SYNC_MM
@@ -320,20 +325,13 @@ int MEMPHY_concat_usedfp(struct memphy_struct *mp, struct framephy_struct *start
 	return 0;
 }
 
-int MEMPHY_count_available_frame(struct memphy_struct * mp, int required_num_pages)
+int MEMPHY_count_free_frame(struct memphy_struct * mp)
 {
-	int count = 0;
+	int count;
 #if SYNC_MM
 	pthread_mutex_lock(&mp->lock_free_fp);
 #endif // SYNC_MM
-	struct framephy_struct * roamer = mp->free_fp_list;
-	while (roamer)
-	{
-		count++;
-		roamer = roamer->fp_next;
-		if (count >= required_num_pages)
-			break;
-	}
+	count = mp->num_of_free_frame;
 #if SYNC_MM
 	pthread_mutex_unlock(&mp->lock_free_fp);
 #endif // SYNC_MM

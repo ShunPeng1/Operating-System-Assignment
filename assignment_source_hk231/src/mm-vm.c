@@ -436,7 +436,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 		pte = mm->pgd[pgn];
 
 		// enlist_pgn_node(&caller->mm->fifo_using_pgn, pgn);
-		enlist_tail_pgn_node(&caller->mm->fifo_using_pgn, pgn);
+		enlist_tail_pgn_node(caller->mm, pgn);
 	}
 
 	*fpn = PAGING_FPN(pte);
@@ -684,6 +684,7 @@ int find_victim_page(struct mm_struct *mm, int *retpgn, int exception_page)
 #endif
 		if (pgn_node->pg_next == NULL) // cannot find another page
 		{
+			*retpgn = -1;
 			return -1;
 		}
 		else // take the next page number
@@ -698,26 +699,13 @@ int find_victim_page(struct mm_struct *mm, int *retpgn, int exception_page)
 	printf("Found victim page\n");
 #endif
 	free(pgn_node);
-
+	mm->num_of_fifo_using_pgn--;
 	return 0;
 }
 
-int count_available_victim(struct mm_struct *mm, int exception_page, int required_num_pages)
+int count_available_victim(struct mm_struct *mm, int exception_page)
 {
-	struct pgn_t *pgn_node = mm->fifo_using_pgn;
-	int count = 0;
-	while (pgn_node)
-	{
-		if (pgn_node->pgn != exception_page)
-		{
-			count++;
-			if (count >= required_num_pages)
-				break;
-		}
-		pgn_node = pgn_node->pg_next;
-	}
-
-	return count;
+	return exception_page < 0? mm->num_of_fifo_using_pgn : mm->num_of_fifo_using_pgn-1;
 }
 
 // #endif

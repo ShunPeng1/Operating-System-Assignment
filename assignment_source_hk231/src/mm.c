@@ -113,7 +113,7 @@ int vmap_page_range(struct pcb_t *caller, // process call
 		/* Enqueue new usage page */
 		// Quang
 		// enlist_pgn_node(&caller->mm->fifo_using_pgn, page_number_begin+pgit);
-		enlist_tail_pgn_node(&caller->mm->fifo_using_pgn, page_number_begin+pgit);
+		enlist_tail_pgn_node(caller->mm, page_number_begin+pgit);
 		
 		pgit++;
 	}
@@ -134,9 +134,9 @@ int alloc_pages_range(struct pcb_t *caller , int req_pgnum, struct framephy_stru
 {
 	int pgit, mram_fpn;
 
-	int ram_free_fpn_count = MEMPHY_count_available_frame(caller->mram, req_pgnum);
-	int victim_count = count_available_victim(caller->mm, exception_page, req_pgnum);
-	int swp_free_fpn_count = MEMPHY_count_available_frame(caller->active_mswp, req_pgnum);
+	int ram_free_fpn_count = MEMPHY_count_free_frame(caller->mram);
+	int victim_count = count_available_victim(caller->mm, exception_page);
+	int swp_free_fpn_count = MEMPHY_count_free_frame(caller->active_mswp);
 
 	if (req_pgnum > ram_free_fpn_count)	// Need to swap something
 	{
@@ -224,7 +224,7 @@ int vm_map_ram(struct pcb_t *caller, int astart, int aend, int mapstart, int inc
 {
 	struct framephy_struct *mram_free_frame_list = NULL;
 	int num_increase_alloc_page_by_mram;
-
+	
 	/*@bksysnet: author provides a feasible solution of getting frames
 	 *FATAL logic in here, wrong behaviour if we have not enough page
 	 *i.e. we request 1000 frames meanwhile our RAM has size of 3 frames
@@ -301,7 +301,7 @@ int init_mm(struct mm_struct *mm, struct pcb_t *caller)
 
 	mm->mmap = vma;
 	mm->fifo_using_pgn = NULL;
-
+	mm->num_of_fifo_using_pgn = 0;
 	return 0;
 }
 
@@ -338,26 +338,25 @@ int enlist_pgn_node(struct pgn_t **plist, int pgn)
 }
 
 // Quang modified this to enlist at the tail instead of head to FIFO more easily
-int enlist_tail_pgn_node(struct pgn_t **plist, int pgn)
+int enlist_tail_pgn_node(struct mm_struct *mm , int pgn)
 {
 	struct pgn_t* pnode = malloc(sizeof(struct pgn_t));
 	pnode->pgn = pgn;
 	pnode->pg_next = NULL;
 
-	if (*plist == NULL)
+	if (mm->fifo_using_pgn == NULL)
 	{
-		*plist = pnode;
+		mm->fifo_using_pgn = pnode;
 		return 0;
 	}
 
-	struct pgn_t* head = *plist;
-	struct pgn_t **pointer_to_pointer = &head;
-	while (*pointer_to_pointer != NULL)
-	{
-		pointer_to_pointer = &(*pointer_to_pointer)->pg_next;
-	}
-	*pointer_to_pointer = pnode;
-
+	struct pgn_t* temp = mm->fifo_using_pgn;
+    while (temp->pg_next != NULL)
+    {
+        temp = temp->pg_next;
+    }
+    temp->pg_next = pnode;
+	mm->num_of_fifo_using_pgn++;
 	return 0;
 }
 
