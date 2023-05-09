@@ -134,9 +134,9 @@ int alloc_pages_range(struct pcb_t *caller , int req_pgnum, struct framephy_stru
 {
 	int pgit, mram_fpn;
 
-	int ram_free_fpn_count = MEMPHY_count_available_frame(caller->mram);
-	int victim_count = count_available_victim(caller->mm, exception_page);
-	int swp_free_fpn_count = MEMPHY_count_available_frame(caller->active_mswp);
+	int ram_free_fpn_count = MEMPHY_count_available_frame(caller->mram, req_pgnum);
+	int victim_count = count_available_victim(caller->mm, exception_page, req_pgnum);
+	int swp_free_fpn_count = MEMPHY_count_available_frame(caller->active_mswp, req_pgnum);
 
 	if (req_pgnum > ram_free_fpn_count)	// Need to swap something
 	{

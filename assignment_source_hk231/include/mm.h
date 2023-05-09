@@ -152,7 +152,7 @@ int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int 
 int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_struct *newrg);
 int increase_vma_limit(struct pcb_t *caller, int vmaid, int demand_size, int true_inc_size);
 int find_victim_page(struct mm_struct *mm, int *retpgn, int exception_page);
-int count_available_victim(struct mm_struct *mm, int exception_page);
+int count_available_victim(struct mm_struct *mm, int exception_page, int required_num_pages);
 struct vm_rg_struct *create_vm_rg_of_pcb_at_brk(struct pcb_t *caller, int vmaid, int size);
 struct vm_area_struct *get_vma_by_index(struct mm_struct *mm, int vmaid);
 
@@ -164,7 +164,7 @@ int MEMPHY_concat_usedfp(struct memphy_struct *mp, struct framephy_struct *start
 int MEMPHY_read(struct memphy_struct *mp, int addr, BYTE *value);
 int MEMPHY_write(struct memphy_struct *mp, int addr, BYTE data);
 int MEMPHY_dump(struct memphy_struct *mp);
-int MEMPHY_count_available_frame(struct memphy_struct *mp);
+int MEMPHY_count_available_frame(struct memphy_struct * mp, int required_num_pages);
 int init_memphy(struct memphy_struct *mp, int max_size, int randomflg);
 int delete_memphy(struct memphy_struct *mp, int max_size, int randomflg);
 /* DEBUG */

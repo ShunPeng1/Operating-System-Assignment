@@ -702,7 +702,7 @@ int find_victim_page(struct mm_struct *mm, int *retpgn, int exception_page)
 	return 0;
 }
 
-int count_available_victim(struct mm_struct *mm, int exception_page)
+int count_available_victim(struct mm_struct *mm, int exception_page, int required_num_pages)
 {
 	struct pgn_t *pgn_node = mm->fifo_using_pgn;
 	int count = 0;
@@ -711,6 +711,8 @@ int count_available_victim(struct mm_struct *mm, int exception_page)
 		if (pgn_node->pgn != exception_page)
 		{
 			count++;
+			if (count >= required_num_pages)
+				break;
 		}
 		pgn_node = pgn_node->pg_next;
 	}
