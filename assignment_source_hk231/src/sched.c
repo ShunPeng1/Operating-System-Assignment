@@ -44,7 +44,6 @@ void init_scheduler(void) {
 }
 
 #ifdef MLQ_SCHED
-// Quang added this
 void refill_slots_of_mlq(void)
 {
 	for (int i = 0; i < MAX_PRIO; i++)
@@ -59,6 +58,10 @@ void refill_slots_of_mlq(void)
 #endif
 }
 
+
+/* 
+return NULL when queue is empty, find the highest priority non-empty queue and dequeue
+*/
 struct pcb_t *get_proc_by_slot(){
 	if (mlq_ready_queue.proc_count == 0)
 	{
@@ -88,9 +91,6 @@ struct pcb_t * get_mlq_proc(void) {
 	 * Remember to use lock to protect the queue.
 	 * */
 	
-	/* Thuan
-	return NULL when queue is empty, find the highest priority non-empty queue and dequeue
-	*/
 #if SYNC_SCHED
 	pthread_mutex_lock(&queue_lock);
 #endif // SYNC_SCHED
