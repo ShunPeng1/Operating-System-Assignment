@@ -312,6 +312,7 @@ struct vm_rg_struct* init_vm_rg(int rg_start, int rg_end)
 
 	rgnode->rg_start = rg_start;
 	rgnode->rg_end = rg_end;
+	rgnode->valid = 0;
 	rgnode->rg_next = NULL;
 
 	return rgnode;

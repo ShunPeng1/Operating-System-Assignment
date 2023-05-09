@@ -28,6 +28,7 @@ struct pgn_t{
 struct vm_rg_struct {
    unsigned long rg_start;
    unsigned long rg_end;
+   int valid;  // Note: this field is only initialized if it belongs to the symbol table, no where else
 
    struct vm_rg_struct *rg_next; 
 };

@@ -67,6 +67,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 	{
 		caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
 		caller->mm->symrgtbl[rgid].rg_end = rgnode.rg_end;
+		caller->mm->symrgtbl[rgid].valid = 1;
 
 		*alloc_addr = rgnode.rg_start;
 
@@ -85,6 +86,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 	{
 		caller->mm->symrgtbl[rgid].rg_start = cur_vma->sbrk;
 		caller->mm->symrgtbl[rgid].rg_end = cur_vma->sbrk + size;
+		caller->mm->symrgtbl[rgid].valid = 1;
 
 		cur_vma->sbrk += size;
 		return 0;
@@ -102,6 +104,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 	/*Successful increase limit */
 	caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
 	caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size;
+	caller->mm->symrgtbl[rgid].valid = 1;
 	caller->mm->mmap->sbrk += size;
 	cur_vma->vm_end += PAGING_PAGE_ALIGNSZ(demand_size);
 	*alloc_addr = old_sbrk;
@@ -335,6 +338,7 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
 	/* TODO: Manage the collect freed region to freerg_list */
 	// struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
 	struct vm_rg_struct *removedItem = get_symbol_region_by_id(caller->mm, rgid);
+	removedItem->valid = 0;
 	// struct vm_rg_struct *delListHead = cur_vma->vm_freerg_list;
 	// if(delListHead == NULL){
 	// 	delListHead = &removeItem;
@@ -508,7 +512,7 @@ int __read(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE *data)
 
 	struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
 
-	if (currg == NULL || cur_vma == NULL) /* Invalid memory identify */
+	if (currg == NULL || cur_vma == NULL || currg->valid == 0) /* Invalid memory identify */
 		return ERR_RW_UNDEFINED;
 
 	if (currg->rg_start + offset < cur_vma->vm_start || currg->rg_start + offset >= cur_vma->sbrk)
@@ -530,7 +534,10 @@ int pgread(
 
 	destination = (uint32_t)data;
 #if IODUMP
-	printf("read region=%d offset=%d value=%d\n", source, offset, data);
+	if (read_status == 0)
+		printf("read region=%d offset=%d value=%d\n", source, offset, data);
+	else
+		printf("read region=%d offset=%d value=null\n", source, offset);
 #if PAGETBL_DUMP
 	print_pgtbl(proc, 0, -1); // print max TBL
 #endif						  // PAGETBL_DUMP
@@ -569,7 +576,7 @@ int __write(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE value)
 
 	struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
 
-	if (currg == NULL || cur_vma == NULL) /* Invalid memory identify */
+	if (currg == NULL || cur_vma == NULL || currg->valid == 0) /* Invalid memory identify */
 		return ERR_RW_UNDEFINED;
 
 	if (currg->rg_start + offset < cur_vma->vm_start || currg->rg_start + offset >= cur_vma->sbrk)
