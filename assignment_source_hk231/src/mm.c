@@ -43,7 +43,6 @@ int init_pte(uint32_t *pte,
 	return 0;   
 }
 
-// Quang modified this
 /* 
  * pte_set_swap - Set PTE entry for swapped page
  * @pte    : target page table entry (PTE)
