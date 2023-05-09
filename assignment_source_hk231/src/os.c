@@ -118,7 +118,7 @@ static void * ld_routine(void * args) {
 			next_slot(timer_id);
 		}
 #ifdef MM_PAGING
-		proc->mm = malloc(sizeof(struct mm_struct));
+		proc->mm = calloc(1, sizeof(struct mm_struct));
 		init_mm(proc->mm, proc);
 		proc->mram = mram;
 		proc->mswp = mswp;
