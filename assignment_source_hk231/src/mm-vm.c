@@ -587,7 +587,6 @@ int __write(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE value)
 		return ERR_INVALID_ACCESS;
 
 	return pg_setval(caller->mm, currg->rg_start + offset, value, caller);
-	;
 }
 
 /*pgwrite - PAGING-based write a region memory */
@@ -705,7 +704,64 @@ int find_victim_page(struct mm_struct *mm, int *retpgn, int exception_page)
 
 int count_available_victim(struct mm_struct *mm, int exception_page)
 {
-	return exception_page < 0? mm->num_of_fifo_using_pgn : mm->num_of_fifo_using_pgn-1;
+	return (exception_page < 0 || exception_page > mm->current_max_pgn)
+			? mm->num_of_fifo_using_pgn 
+			: mm->num_of_fifo_using_pgn-1;
+}
+
+int bring_to_ram(struct mm_struct * mm, struct pcb_t *caller, int page_num)
+{
+	uint32_t pte = mm->pgd[page_num];
+
+	if (pte == 0 || PAGING_PAGE_PRESENT(pte))
+	{
+		return 0;
+	}
+
+	int vicpgn, swpfpn;
+
+	int tgtfpn = PAGING_SWAPFPN(pte); // the target frame storing our variable
+
+	/* TODO: Play with your paging theory here */
+	/* Find victim page */
+	if (find_victim_page(caller->mm, &vicpgn, -1) != 0)
+	{
+		return ERR_LACK_MEM_RAM;
+	}
+	uint32_t victim_pte = mm->pgd[vicpgn];
+	int victim_fpn = PAGING_FPN(victim_pte);
+
+	/* Get free frame in MEMSWP */
+	if (MEMPHY_get_freefp(caller->active_mswp, &swpfpn) != 0)
+	{
+		return ERR_LACK_MEM_SWP;
+	}
+	/* Do swap frame from MEMRAM to MEMSWP and vice versa*/
+	/* Copy victim frame to swap */
+	__swap_cp_page(caller->mram, victim_fpn, caller->active_mswp, swpfpn); // potential param type mismatch
+	/* Copy target frame from swap to mem */
+	__swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, victim_fpn); // potential param type mismatch
+
+#if IODUMP
+		printf("Swapped frame RAM %d with frame SWAP %d while alloc\n", victim_fpn, tgtfpn);
+#endif
+
+	/* Target frame in SWAP is now free, add that to free frame list of SWAP */
+	MEMPHY_put_freefp(caller->active_mswp, tgtfpn);
+
+	/* Update page table */
+	/* Update the victim page entry to SWAPPED */
+	pte_set_swap(&mm->pgd[vicpgn], SWPTYP, swpfpn);
+
+	/* Update its online status of the target page */
+	/* Update the accessed page entry to PRESENT*/
+	// pte_set_fpn() & mm->pgd[pgn];
+	pte_set_fpn(&mm->pgd[page_num], victim_fpn);
+
+	// enlist_pgn_node(&caller->mm->fifo_using_pgn, pgn);
+	enlist_tail_pgn_node(caller->mm, page_num);
+
+	return 0;
 }
 
 // #endif

@@ -153,6 +153,7 @@ int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_s
 int increase_vma_limit(struct pcb_t *caller, int vmaid, int demand_size, int true_inc_size);
 int find_victim_page(struct mm_struct *mm, int *retpgn, int exception_page);
 int count_available_victim(struct mm_struct *mm, int exception_page);
+int bring_to_ram(struct mm_struct * mm, struct pcb_t *caller, int page_num);
 struct vm_rg_struct *create_vm_rg_of_pcb_at_brk(struct pcb_t *caller, int vmaid, int size);
 struct vm_area_struct *get_vma_by_index(struct mm_struct *mm, int vmaid);
 

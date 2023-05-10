@@ -194,7 +194,7 @@ int alloc_pages_range(struct pcb_t *caller , int req_pgnum, struct framephy_stru
 			pte_set_swap(&caller->mm->pgd[vicpgn], SWPTYP, swp_fpn);
 
 #if PAGING_DBG
-			printf("Moved frame RAM %d to frame SWAP %d while alloc\n", vicpgn, swp_fpn);
+			printf("Moved frame RAM %d to frame SWAP %d while alloc\n", victim_fpn, swp_fpn);
 #endif
 			
 			/* Thuan: Create new node with value fpn, then assign the new node become head of frm_lst */
@@ -232,6 +232,14 @@ int vm_map_ram(struct pcb_t *caller, int astart, int aend, int mapstart, int inc
 	 *in endless procedure of swap-off to get frame and we have not provide 
 	 *duplicate control mechanism, keep it simple
 	 */
+
+	/* Bring the page of starting address to RAM if it's not in RAM yet */
+	int bring_to_ram_status = bring_to_ram(caller->mm, caller, PAGING_PGN(astart));
+	if (bring_to_ram_status != 0)
+	{
+		return bring_to_ram_status;
+	}
+
 	num_increase_alloc_page_by_mram = alloc_pages_range(caller, increase_page_number, &mram_free_frame_list, PAGING_PGN(astart));
 	//printf("DEBUG: alloc_pages_range\n");
 	if (num_increase_alloc_page_by_mram < 0)
@@ -302,6 +310,7 @@ int init_mm(struct mm_struct *mm, struct pcb_t *caller)
 	mm->mmap = vma;
 	mm->fifo_using_pgn = NULL;
 	mm->num_of_fifo_using_pgn = 0;
+	mm->current_max_pgn = -1;
 	return 0;
 }
 
@@ -344,6 +353,12 @@ int enlist_tail_pgn_node(struct mm_struct *mm , int pgn)
 	pnode->pgn = pgn;
 	pnode->pg_next = NULL;
 
+	mm->num_of_fifo_using_pgn++;
+	if (pgn > mm->current_max_pgn)
+	{
+		mm->current_max_pgn = pgn;
+	}
+
 	if (mm->fifo_using_pgn == NULL)
 	{
 		mm->fifo_using_pgn = pnode;
@@ -356,7 +371,6 @@ int enlist_tail_pgn_node(struct mm_struct *mm , int pgn)
         temp = temp->pg_next;
     }
     temp->pg_next = pnode;
-	mm->num_of_fifo_using_pgn++;
 	return 0;
 }
 

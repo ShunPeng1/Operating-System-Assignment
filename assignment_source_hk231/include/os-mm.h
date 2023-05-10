@@ -66,6 +66,7 @@ struct mm_struct {
    
    /* list of free page */
    struct pgn_t *fifo_using_pgn; //head of using page linked list, 
+   int current_max_pgn;
    int num_of_fifo_using_pgn;
 };
 
