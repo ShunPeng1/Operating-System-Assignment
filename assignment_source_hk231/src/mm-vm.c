@@ -62,9 +62,6 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 	/*Allocate at the toproof */
 	struct vm_rg_struct rgnode;
 
-	// printf("DEBUG: ALLOC\n");
-
-	// No TODO in get_free_vmrg_area so ignore
 	if (get_free_vmrg_area(caller, vmaid, size, &rgnode) == 0) // if successfully get free region
 	{
 		caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
@@ -76,7 +73,6 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 		return 0;
 	}
 
-	// printf("DEBUG: ALLOC NOT FOUND FREE VMRG_AREA\n");
 	/* TODO get_free_vmrg_area FAILED handle the region management (Fig.6)*/
 
 	/*Attempt to increase limit to get space */
@@ -96,7 +92,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 
 	int old_sbrk = cur_vma->sbrk;
 
-	int demand_size = cur_vma->sbrk + size - cur_vma->vm_end; // 0 + 300 - 0 ; 300 + 100 - 512
+	int demand_size = cur_vma->sbrk + size - cur_vma->vm_end;
 
 	/* TODO INCREASE THE LIMIT */
 	int increase_status = increase_vma_limit(caller, vmaid, demand_size, size);
@@ -151,7 +147,7 @@ int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int 
 int increase_vma_limit(struct pcb_t *caller, int vmaid, int demand_size, int true_inc_size)
 {
 	struct vm_rg_struct *new_region = malloc(sizeof(struct vm_rg_struct));
-	int byte_increase_amt = PAGING_PAGE_ALIGNSZ(demand_size); // this is equal to inc_sz
+	int byte_increase_amt = PAGING_PAGE_ALIGNSZ(demand_size); 
 	int num_of_pages_increased = byte_increase_amt / PAGING_PAGESZ;
 	struct vm_rg_struct *next_area = create_vm_rg_of_pcb_at_brk(caller, vmaid, true_inc_size); // this is a newly allocated region from [sbrk , sbrk + inc_sz], only a temporary struct to store start and end
 	struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
@@ -341,19 +337,6 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
 	// struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
 	struct vm_rg_struct *removedItem = get_symbol_region_by_id(caller->mm, rgid);
 	removedItem->valid = 0;
-	// struct vm_rg_struct *delListHead = cur_vma->vm_freerg_list;
-	// if(delListHead == NULL){
-	// 	delListHead = &removeItem;
-	// 	delListHead->rg_start = removeItem->rg_start;
-	// 	delListHead->rg_end = removeItem->rg_end;
-	// }
-	// else{
-	// 	while(delListHead->rg_next != NULL){
-	// 		delListHead = delListHead->rg_next;
-	// 	}
-	// 	delListHead->rg_next = removeItem->rg_start;
-	// 	delListHead->rg_end += removeItem->rg_end;
-	// }
 
 	/*enlist the obsoleted memory region */
 	enlist_vm_freerg_list(caller->mm, removedItem);
