@@ -418,7 +418,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 		/* Copy target frame from swap to mem */
 		__swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, victim_fpn); // potential param type mismatch
 
-#if IODUMP
+#if PAGING_DBG
 		printf("Swapped frame RAM %d with frame SWAP %d while getpage\n", victim_fpn, tgtfpn);
 #endif
 
@@ -742,8 +742,8 @@ int bring_to_ram(struct mm_struct * mm, struct pcb_t *caller, int page_num)
 	/* Copy target frame from swap to mem */
 	__swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, victim_fpn); // potential param type mismatch
 
-#if IODUMP
-		printf("Swapped frame RAM %d with frame SWAP %d while alloc\n", victim_fpn, tgtfpn);
+#if PAGING_DBG
+	printf("Swapped frame RAM %d with frame SWAP %d while alloc\n", victim_fpn, tgtfpn);
 #endif
 
 	/* Target frame in SWAP is now free, add that to free frame list of SWAP */
