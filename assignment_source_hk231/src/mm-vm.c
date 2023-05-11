@@ -336,6 +336,7 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
 	/* TODO: Manage the collect freed region to freerg_list */
 	// struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
 	struct vm_rg_struct *removed_item = get_symbol_region_by_id(caller->mm, rgid);
+	removed_item->valid = 0;
 	struct vm_rg_struct *new_removed_item = calloc(1, sizeof(struct vm_rg_struct));
 	new_removed_item->rg_start = removed_item->rg_start;
 	new_removed_item->rg_end = removed_item->rg_end;
