@@ -1,7 +1,6 @@
-1 6
+1 5
 calc
 alloc 256 0
-alloc 256 1
-alloc 256 2
-alloc 256 3
+free 0
+alloc 200 0
 write 100 0 20

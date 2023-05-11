@@ -335,11 +335,13 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
 
 	/* TODO: Manage the collect freed region to freerg_list */
 	// struct vm_area_struct *cur_vma = get_vma_by_index(caller->mm, vmaid);
-	struct vm_rg_struct *removedItem = get_symbol_region_by_id(caller->mm, rgid);
-	removedItem->valid = 0;
+	struct vm_rg_struct *removed_item = get_symbol_region_by_id(caller->mm, rgid);
+	struct vm_rg_struct *new_removed_item = calloc(1, sizeof(struct vm_rg_struct));
+	new_removed_item->rg_start = removed_item->rg_start;
+	new_removed_item->rg_end = removed_item->rg_end;
 
 	/*enlist the obsoleted memory region */
-	enlist_vm_freerg_list(caller->mm, removedItem);
+	enlist_vm_freerg_list(caller->mm, new_removed_item);
 
 	return 0;
 }
