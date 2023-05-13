@@ -75,7 +75,6 @@ struct pcb_t *dequeue(struct queue_t *q)
     }
 
     q->size--;
-    //q->proc[q->size] = NULL;
-    //printf("Debug: Dequeue %d - %d\n", proc->pid, proc->prio);
+    
     return proc;
 }
