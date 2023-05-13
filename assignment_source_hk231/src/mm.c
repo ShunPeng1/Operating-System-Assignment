@@ -195,7 +195,7 @@ int alloc_pages_range(struct pcb_t *caller , int req_pgnum, struct framephy_stru
 
 #if PAGING_DBG
 			printf("Moved frame RAM %d to frame SWAP %d while alloc\n", victim_fpn, swp_fpn);
-#endif
+#endif // PAGING_DBG
 			
 			/* Thuan: Create new node with value fpn, then assign the new node become head of frm_lst */
 			struct framephy_struct *new_node = malloc(sizeof(struct framephy_struct));

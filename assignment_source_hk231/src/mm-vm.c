@@ -46,7 +46,7 @@ int pgalloc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 	return alloc_status;
 #else
 	return __alloc(proc, 0, reg_index, size, &addr);
-#endif
+#endif // PAGING_ERR_DUMP
 }
 
 /*__alloc - allocate a region memory
@@ -406,7 +406,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 
 #if PAGING_DBG
 		printf("Swapped frame RAM %d with frame SWAP %d while getpage\n", victim_fpn, tgtfpn);
-#endif
+#endif // PAGING_DBG
 
 		/* Target frame in SWAP is now free, add that to free frame list of SWAP */
 		MEMPHY_put_freefp(caller->active_mswp, tgtfpn);
@@ -453,7 +453,7 @@ int pg_getval(struct mm_struct *mm, int addr, BYTE *data, struct pcb_t *caller)
 
 #if PAGING_DBG
 	printf("Read from RAM successfully\n");
-#endif // IODUMP
+#endif // PAGING_DBG
 
 	return 0;
 }
@@ -481,7 +481,7 @@ int pg_setval(struct mm_struct *mm, int addr, BYTE value, struct pcb_t *caller)
 
 #if PAGING_DBG
 	printf("Write to RAM successfully\n");
-#endif // IODUMP
+#endif // PAGING_DBG
 
 	return 0;
 }
@@ -537,7 +537,7 @@ int pgread(
 	int line = proc->pc + 1;
 	if (read_status == ERR_INVALID_ACCESS)
 	{
-		printf("** ShopeeOS ERROR ** in PID: %d, at line: %d:\n ===> what: accessed invalid memory region, cannot read!\n", pid, line);
+		printf("** ShopeeOS ERROR ** in PID: %d, at line: %d:\n ===> what: accessed invalid memory address, cannot read!\n", pid, line);
 	}
 	else if (read_status == ERR_SWAPPING)
 	{
@@ -547,7 +547,7 @@ int pgread(
 	{
 		printf("** ShopeeOS ERROR ** in PID: %d, at line: %d:\n ===> what: undefined error, cannot read!\n", pid, line);
 	}
-#endif
+#endif // PAGING_ERR_DUMP
 
 	return read_status;
 }
@@ -586,9 +586,9 @@ int pgwrite(
 	printf("write region=%d offset=%d value=%d\n", destination, offset, data);
 #if PAGETBL_DUMP
 	print_pgtbl(proc, 0, -1); // print max TBL
-#endif
+#endif // PAGETBL_DUMP
 	MEMPHY_dump(proc->mram);
-#endif
+#endif // IODUMP
 	int write_status = __write(proc, 0, destination, offset, data);
 
 #if PAGING_ERR_DUMP
@@ -596,7 +596,7 @@ int pgwrite(
 	int line = proc->pc + 1;
 	if (write_status == ERR_INVALID_ACCESS)
 	{
-		printf("** ShopeeOS ERROR ** in PID: %d, at line: %d:\n ===> what: accessed invalid memory region, cannot write!\n", pid, line);
+		printf("** ShopeeOS ERROR ** in PID: %d, at line: %d:\n ===> what: accessed invalid memory address, cannot write!\n", pid, line);
 	}
 	else if (write_status == ERR_SWAPPING)
 	{
@@ -606,7 +606,7 @@ int pgwrite(
 	{
 		printf("** ShopeeOS ERROR ** in PID: %d, at line: %d:\n ===> what: undefined error, cannot write!\n", pid, line);
 	}
-#endif
+#endif // PAGING_ERR_DUMP
 
 	return write_status;
 }
@@ -666,7 +666,7 @@ int find_victim_page(struct mm_struct *mm, int *retpgn, int exception_page)
 	{ // current return page number matches the exception
 #if PAGING_DBG
 		printf("Matched exception page\n");
-#endif
+#endif // PAGING_DBG
 		if (pgn_node->pg_next == NULL) // cannot find another page
 		{
 			*retpgn = -1;
@@ -682,7 +682,7 @@ int find_victim_page(struct mm_struct *mm, int *retpgn, int exception_page)
 
 #if PAGING_DBG
 	printf("Found victim page\n");
-#endif
+#endif // PAGING_DBG
 	free(pgn_node);
 	mm->num_of_fifo_using_pgn--;
 	return 0;
@@ -730,7 +730,7 @@ int bring_to_ram(struct mm_struct * mm, struct pcb_t *caller, int page_num)
 
 #if PAGING_DBG
 	printf("Swapped frame RAM %d with frame SWAP %d while alloc\n", victim_fpn, tgtfpn);
-#endif
+#endif // PAGING_DBG
 
 	/* Target frame in SWAP is now free, add that to free frame list of SWAP */
 	MEMPHY_put_freefp(caller->active_mswp, tgtfpn);

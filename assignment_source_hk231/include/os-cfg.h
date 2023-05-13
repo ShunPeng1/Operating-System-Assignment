@@ -9,14 +9,14 @@
 #define SYNC_MM 1
 
 // #define MM_FIXED_MEMSZ
-#define SCHED_DBG 1
-#define VMDBG 1 
-#define MMDBG 1
+#define SCHED_DBG 0
+#define VMDBG 0
+#define MMDBG 0
 
 #define IODUMP 1
 #define PAGETBL_DUMP 1
 
-#define PAGING_DBG 1
+#define PAGING_DBG 0
 #define PAGING_ERR_DUMP 1
 
 #endif
